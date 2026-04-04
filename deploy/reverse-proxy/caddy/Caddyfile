@@ -1,0 +1,1 @@
+:80 { reverse_proxy gateway:8001 }

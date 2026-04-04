@@ -1,0 +1,21 @@
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: services/gateway/Dockerfile
+    env_file: [../../.env]
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../../services/gateway:/app/services/gateway
+
+  rag-api:
+    build:
+      context: ../..
+      dockerfile: services/rag-api/Dockerfile
+    env_file: [../../.env]
+    ports:
+      - "8010:8010"
+    volumes:
+      - ../../services/rag-api:/app/services/rag-api
+      - ../../knowledge:/app/knowledge

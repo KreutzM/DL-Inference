@@ -1,0 +1,14 @@
+models:
+  qwen3_32b_awq:
+    family: qwen
+    backend: vllm
+    model_id: Qwen/Qwen3-32B-AWQ
+    tensor_parallel_size: 2
+    quantization: awq
+
+  qwen2_5_72b_instruct_awq:
+    family: qwen
+    backend: sglang
+    model_id: Qwen/Qwen2.5-72B-Instruct-AWQ
+    tensor_parallel_size: 2
+    quantization: awq

@@ -1,0 +1,3 @@
+logging:
+  redact_inputs: false
+  audit_admin_actions: true

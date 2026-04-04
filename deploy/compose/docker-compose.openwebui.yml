@@ -1,0 +1,8 @@
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    env_file: [../../.env]
+    ports:
+      - "3001:8080"
+    volumes:
+      - ../../data/openwebui:/app/backend/data

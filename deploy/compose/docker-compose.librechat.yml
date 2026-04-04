@@ -1,0 +1,12 @@
+services:
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    env_file: [../../.env]
+    ports:
+      - "3080:3080"
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ../../data/librechat:/app/client/public/images
+      - ../../configs/librechat/librechat.yaml:/app/librechat.yaml:ro

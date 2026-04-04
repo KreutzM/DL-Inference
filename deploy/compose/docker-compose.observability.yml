@@ -1,0 +1,19 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3002:3000"]
+    volumes:
+      - ../../observability/grafana:/var/lib/grafana
+
+  loki:
+    image: grafana/loki:latest
+    ports: ["3100:3100"]
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ../../observability/loki/config.yaml:/etc/loki/local-config.yaml:ro

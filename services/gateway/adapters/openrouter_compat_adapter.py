@@ -1,0 +1,2 @@
+class OpenRouterCompatAdapter:
+    pass

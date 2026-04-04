@@ -1,0 +1,5 @@
+services:
+  gateway:
+    restart: unless-stopped
+  rag-api:
+    restart: unless-stopped

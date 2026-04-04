@@ -1,0 +1,13 @@
+version: 1.2.8
+cache: true
+endpoints:
+  custom:
+    - name: repo2-local
+      apiKey: ${ADMIN_API_KEY}
+      baseURL: http://gateway:8001/v1
+      models:
+        default: [local-default]
+        fetch: false
+      titleConvo: true
+      titleModel: local-default
+      modelDisplayLabel: Repo2 Local

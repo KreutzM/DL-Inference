@@ -1,0 +1,3 @@
+chunking:
+  target_tokens: 500
+  overlap_tokens: 80

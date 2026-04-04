@@ -1,0 +1,22 @@
+services:
+  sglang:
+    image: lmsysorg/sglang:latest
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command:
+      - python3
+      - -m
+      - sglang.launch_server
+      - --model-path
+      - ${SGLANG_MODEL:-Qwen/Qwen3-32B-AWQ}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "30000"
+      - --tp
+      - ${SGLANG_TP_SIZE:-2}
+    ports:
+      - "30000:30000"
+    volumes:
+      - ../../model-cache:/root/.cache/huggingface

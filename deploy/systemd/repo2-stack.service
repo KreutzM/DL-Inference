@@ -1,0 +1,9 @@
+[Unit]
+Description=Repo2 Stack
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/bash deploy/scripts/up.sh
+ExecStop=/usr/bin/bash deploy/scripts/down.sh
+[Install]
+WantedBy=multi-user.target

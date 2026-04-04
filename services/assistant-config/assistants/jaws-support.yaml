@@ -1,0 +1,3 @@
+name: jaws-support
+system_prompt: services/assistant-config/system-prompts/jaws_support.md
+retrieval_policy: configs/rag/retrieval.yaml

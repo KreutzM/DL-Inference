@@ -1,0 +1,5 @@
+name: jaws-support
+description: JAWS support assistant with retrieval-backed answers.
+model: local-default
+rag_collection: jaws_support
+system_prompt_ref: services/assistant-config/system-prompts/jaws_support.md

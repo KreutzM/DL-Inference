@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+!.env.dev.example
+!.env.prod.example
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
+
+# Build / cache
+build/
+dist/
+*.egg-info/
+.cache/
+
+# Runtime data
+/data/qdrant/
+/data/librechat/
+/data/openwebui/
+/data/mongo/
+/data/meilisearch/
+/data/uploads/
+/data/cache/
+/data/backups/
+
+# Models
+/models/
+/model-cache/
+
+# Logs
+logs/
+*.log

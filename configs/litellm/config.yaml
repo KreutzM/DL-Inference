@@ -1,0 +1,22 @@
+general_settings:
+  master_key: ${LITELLM_MASTER_KEY}
+  database_url: "sqlite:////tmp/litellm.db"
+
+model_list:
+  - model_name: local-default
+    litellm_params:
+      model: openai/local-default
+      api_base: ${VLLM_BASE_URL}
+      api_key: dummy
+
+  - model_name: local-qwen
+    litellm_params:
+      model: openai/local-qwen
+      api_base: ${VLLM_BASE_URL}
+      api_key: dummy
+
+  - model_name: local-sglang
+    litellm_params:
+      model: openai/local-sglang
+      api_base: ${SGLANG_BASE_URL}
+      api_key: dummy

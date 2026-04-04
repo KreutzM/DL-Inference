@@ -1,0 +1,3 @@
+providers:
+  - name: repo2-gateway
+    api_base: http://gateway:8001/v1

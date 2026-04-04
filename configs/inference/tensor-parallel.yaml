@@ -1,0 +1,2 @@
+defaults:
+  tensor_parallel_size: 2

@@ -1,3 +1,4 @@
 collections:
-  jaws_support:
-    vector_size: 1024
+  mvp-one:
+    vector_size: 384
+    distance: Cosine

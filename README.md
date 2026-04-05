@@ -15,17 +15,17 @@ A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assista
 3. Support assistant configurations, knowledge bases, and retrieval pipelines as first-class repo artifacts.
 4. Keep the repository ready for iterative implementation with Codex CLI.
 
-## Recommended stack
+## MVP stack
 
-- Inference: OpenRouter for the MVP chat-completion path
-- Gateway: repo-owned gateway facade
-- RAG: repo-owned RAG API plus local embeddings and vector store
-- Main UI: out of MVP scope
-- Secondary UI / internal testing: out of MVP scope
-- Vector DB: Qdrant
-- RAG orchestration: LlamaIndex
-- Reverse proxy: Caddy (default) or Nginx
-- Observability: Prometheus + Grafana + Loki + OpenTelemetry
+The current MVP is API-first and uses:
+
+- repo-owned gateway
+- repo-owned RAG API
+- Qdrant as the local vector store
+- deterministic local hash embeddings
+- OpenRouter as the only chat-completion backend
+- no UI services in the default MVP stack
+- no local vLLM or SGLang runtime in the default MVP stack
 
 ## Repo status
 
@@ -145,11 +145,9 @@ python -m repo2ctl.cli smoke
 
 ## Suggested first implementation milestones
 
-1. Read `docs/product/mvp-contract.md`.
-2. Bring up the repo-owned gateway and RAG API around the MVP path.
-3. Implement the RAG ingest/retrieve path in the active repo-owned RAG service tree.
-4. Add one real assistant config and one knowledge base.
-5. Validate the non-streaming OpenRouter-backed chat-completions flow.
+1. Bring up the repo-owned gateway, repo-owned RAG API, Qdrant, and OpenRouter connectivity.
+2. Keep the single MVP assistant and single knowledge base aligned with repo config.
+3. Expand only after the MVP chat and retrieval path are stable.
 
 ## Directory map
 
@@ -171,10 +169,11 @@ python -m repo2ctl.cli smoke
 - Keep knowledge artifacts versioned and separate from runtime data.
 - Prefer declarative config over hidden UI settings.
 - Keep the stack OpenAI-compatible at the edge to simplify switching providers.
+- Keep the MVP path free of UI and local LLM serving assumptions.
 
 ## Cross-platform notes
 
 - The repo keeps Python as the portable operator entrypoint via `python -m repo2ctl.cli ...`.
 - Bash scripts remain available for Linux-first operation.
 - PowerShell equivalents are provided for the main operator flows in `scripts/*.ps1` and `deploy/scripts/*.ps1`.
-- Linux-only GPU serving remains the primary target for local inference backends like vLLM and SGLang. Under Windows, the practical path is usually Docker Desktop + WSL2 or a remote Linux GPU server.
+- Linux-only GPU serving remains the primary target for later local inference backends like vLLM and SGLang. The current MVP path does not require them.

@@ -1,5 +1,0 @@
-name: mvp-openrouter
-model: mvp_openrouter_chat
-system_prompt: services/assistant-config/system-prompts/jaws_support.md
-knowledge_base: mvp-one
-retrieval_policy: deferred

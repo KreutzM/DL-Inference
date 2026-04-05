@@ -1,5 +1,8 @@
-from services.gateway_pkg.app.main import app
+from fastapi.testclient import TestClient
+
+from services.gateway.app.main import app
 
 
-def test_app_exists():
-    assert app.title == "Repo2 Gateway"
+def test_gateway_health():
+    client = TestClient(app)
+    assert client.get("/health").json() == {"status": "ok", "service": "gateway"}

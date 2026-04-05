@@ -21,16 +21,24 @@ def list_models() -> list[dict[str, Any]]:
     raw_models = _load_raw_models()
     results: list[dict[str, Any]] = []
 
+    if raw_models:
+        first_model_id = next(iter(raw_models))
+        results.append(
+            {
+                "id": "local-default",
+                "object": "model",
+                "owned_by": "repo2",
+                "metadata": {"alias_for": first_model_id},
+            }
+        )
+
     for model_name, config in raw_models.items():
-        if not config.get("mvp"):
-            continue
         results.append(
             {
                 "id": model_name,
                 "object": "model",
                 "owned_by": "repo2",
                 "metadata": {
-                    "assistant": config.get("assistant"),
                     "backend": config.get("backend"),
                     "family": config.get("family"),
                     "model_id": config.get("model_id"),
@@ -42,7 +50,7 @@ def list_models() -> list[dict[str, Any]]:
 
 def resolve_model(model: str | None) -> str:
     available = {item["id"] for item in list_models()}
-    candidate = model or "mvp_openrouter_chat"
+    candidate = model or "local-default"
     if candidate not in available:
         raise ValueError(f"Unknown model: {candidate}")
     return candidate

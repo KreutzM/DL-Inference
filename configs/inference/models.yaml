@@ -1,11 +1,4 @@
 models:
-  mvp_openrouter_chat:
-    family: openrouter
-    backend: openrouter
-    model_id: openai/gpt-4o-mini
-    assistant: mvp-openrouter
-    mvp: true
-
   qwen3_32b_awq:
     family: qwen
     backend: vllm

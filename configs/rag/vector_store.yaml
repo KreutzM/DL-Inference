@@ -1,0 +1,4 @@
+vector_store:
+  backend: local-json
+  root: knowledge/processed/vector_store
+  filename_template: "{knowledge_base}.json"

@@ -1,0 +1,10 @@
+knowledge_bases:
+  mvp-one:
+    assistant: mvp-openrouter
+    collection: mvp-one
+    title: MVP JAWS support knowledge base
+    description: Minimal seed corpus for the first runnable RAG slice.
+    source_root: knowledge/sources/mvp-one/raw
+    source_globs:
+      - "**/*.md"
+      - "**/*.txt"

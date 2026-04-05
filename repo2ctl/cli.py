@@ -4,8 +4,11 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from urllib.request import urlopen
+
+import httpx
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -66,7 +69,7 @@ def capture_lines(cmd: list[str]) -> list[str]:
 
 def cmd_help(_: argparse.Namespace) -> int:
     print(
-        "Commands: fmt lint docs test smoke up-dev up-prod down logs health tree "
+        "Commands: fmt lint docs test smoke mvp-acceptance up-dev up-prod down logs health tree "
         "prepare-model-cache backup restore review-info"
     )
     return 0
@@ -90,6 +93,95 @@ def cmd_test(_: argparse.Namespace) -> int:
 
 def cmd_smoke(_: argparse.Namespace) -> int:
     return run([sys.executable, "-m", "pytest", "tests/smoke", "-q"])
+
+
+def _request_json(method: str, url: str, payload: dict[str, object] | None = None) -> dict[str, object]:
+    response = httpx.request(method, url, json=payload, timeout=30.0)
+    response.raise_for_status()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise SystemExit(f"Expected JSON object from {url}")
+    return data
+
+
+def _wait_for_health(url: str, label: str, attempts: int = 30, delay_seconds: float = 1.0) -> None:
+    last_error: str | None = None
+    for _ in range(attempts):
+        try:
+            payload = _request_json("GET", url)
+            if payload.get("status") == "ok":
+                return
+            last_error = f"{label} health check returned {payload!r}"
+        except Exception as exc:  # pragma: no cover - exercised through integration path
+            last_error = f"{label} health check failed: {exc}"
+        time.sleep(delay_seconds)
+    raise SystemExit(last_error or f"{label} health check failed")
+
+
+def _assert_non_empty(value: object, label: str) -> None:
+    if not value:
+        raise SystemExit(f"{label} was empty")
+
+
+def cmd_mvp_acceptance(args: argparse.Namespace) -> int:
+    print("Starting MVP stack...")
+    cmd_up_dev(args)
+
+    print("Waiting for gateway and RAG health endpoints...")
+    _wait_for_health(f"{args.gateway_url.rstrip('/')}/health", "gateway")
+    _wait_for_health(f"{args.rag_url.rstrip('/')}/health", "rag_api")
+
+    ingest_payload = {
+        "assistant": args.assistant,
+        "knowledge_base": args.knowledge_base,
+    }
+    print("Ingesting MVP knowledge base...")
+    ingest = _request_json("POST", f"{args.rag_url.rstrip('/')}/ingest", ingest_payload)
+    _assert_non_empty(ingest.get("chunks_indexed"), "ingest.chunks_indexed")
+
+    retrieve_payload = {
+        "assistant": args.assistant,
+        "knowledge_base": args.knowledge_base,
+        "query": args.query,
+        "top_k": args.top_k,
+    }
+    print("Retrieving evidence...")
+    retrieval = _request_json("POST", f"{args.rag_url.rstrip('/')}/retrieve", retrieve_payload)
+    sources = retrieval.get("sources", [])
+    citations = retrieval.get("citations", [])
+    if not isinstance(sources, list) or not sources:
+        raise SystemExit("RAG retrieval returned no sources")
+    if not isinstance(citations, list) or not citations:
+        raise SystemExit("RAG retrieval returned no citations")
+
+    chat_payload = {
+        "model": args.model,
+        "messages": [
+            {"role": "user", "content": args.query},
+        ],
+        "stream": False,
+    }
+    print("Calling gateway chat completions...")
+    completion = _request_json(
+        "POST",
+        f"{args.gateway_url.rstrip('/')}/v1/chat/completions",
+        chat_payload,
+    )
+
+    _assert_non_empty(completion.get("choices"), "chat.completion choices")
+    _assert_non_empty(completion.get("citations"), "chat.completion citations")
+    retrieval_payload = completion.get("retrieval")
+    if not isinstance(retrieval_payload, dict):
+        raise SystemExit("chat.completion retrieval metadata was missing")
+    _assert_non_empty(retrieval_payload.get("sources"), "chat.completion retrieval.sources")
+
+    print(
+        "MVP acceptance succeeded: "
+        f"ingested {ingest.get('chunks_indexed')} chunks, "
+        f"retrieved {len(sources)} sources, "
+        f"gateway returned {len(completion.get('citations', []))} citations."
+    )
+    return 0
 
 
 def cmd_up_dev(_: argparse.Namespace) -> int:
@@ -268,6 +360,18 @@ def build_parser() -> argparse.ArgumentParser:
     add("docs", cmd_docs)
     add("test", cmd_test)
     add("smoke", cmd_smoke)
+    acceptance = sub.add_parser("mvp-acceptance")
+    acceptance.add_argument("--gateway-url", default=os.environ.get("GATEWAY_URL", "http://127.0.0.1:4000"))
+    acceptance.add_argument("--rag-url", default=os.environ.get("RAG_API_URL", "http://127.0.0.1:8010"))
+    acceptance.add_argument("--assistant", default="mvp-openrouter")
+    acceptance.add_argument("--knowledge-base", default="mvp-one")
+    acceptance.add_argument("--model", default="mvp_openrouter_chat")
+    acceptance.add_argument(
+        "--query",
+        default="How do I reset settings in JAWS?",
+    )
+    acceptance.add_argument("--top-k", type=int, default=3)
+    acceptance.set_defaults(func=cmd_mvp_acceptance)
     add("up-dev", cmd_up_dev)
     add("up-prod", cmd_up_prod)
     add("down", cmd_down)

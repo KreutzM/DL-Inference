@@ -23,6 +23,7 @@ It does not require a UI service or a local LLM runtime.
 cp .env.example .env
 python -m repo2ctl.cli up-dev
 python -m repo2ctl.cli smoke
+python -m repo2ctl.cli mvp-acceptance
 ```
 
 ## MVP RAG smoke path
@@ -43,6 +44,14 @@ curl -X POST http://127.0.0.1:4000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"mvp_openrouter_chat","messages":[{"role":"user","content":"How do I reset settings in JAWS?"}],"stream":false}'
 ```
+
+For operators validating the full MVP path repeatedly, the recommended single command is:
+
+```bash
+python -m repo2ctl.cli mvp-acceptance
+```
+
+It starts the MVP stack, waits for both health endpoints, ingests `mvp-one`, checks retrieval, and verifies a non-streaming gateway response with citation metadata.
 
 ## Cross-platform operator commands
 

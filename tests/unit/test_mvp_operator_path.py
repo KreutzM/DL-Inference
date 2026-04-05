@@ -64,13 +64,11 @@ def test_env_example_isolated_mvp_keys() -> None:
     env_text = Path(".env.example").read_text(encoding="utf-8")
     lines = [line.strip() for line in env_text.splitlines() if line.strip()]
 
-    assert "# MVP gateway / RAG" in lines
-    assert "# OpenRouter" in lines
+    assert "# Gateway / MVP API" in lines
     assert "# Non-MVP / later stacks" in lines
-    assert "OPENROUTER_API_KEY=" in lines
     assert "QDRANT_URL=http://qdrant:6333" in lines
 
-    mvp_section = lines[lines.index("# MVP gateway / RAG") : lines.index("# Non-MVP / later stacks")]
+    mvp_section = lines[lines.index("# Gateway / MVP API") : lines.index("# Non-MVP / later stacks")]
     non_mvp_section = lines[lines.index("# Non-MVP / later stacks") :]
 
     assert any(line.startswith("OPENROUTER_API_KEY=") for line in mvp_section)

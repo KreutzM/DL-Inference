@@ -137,10 +137,12 @@ make up-dev
 
 ```bash
 python -m repo2ctl.cli smoke
+python -m repo2ctl.cli mvp-acceptance
 ```
 
 ```powershell
 ./scripts/repo2.ps1 smoke
+./scripts/repo2.ps1 mvp-acceptance
 ```
 
 ## Suggested first implementation milestones

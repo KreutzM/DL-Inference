@@ -38,6 +38,14 @@ def load_mvp_assistant() -> MvpAssistant:
     )
 
 
+def load_mvp_system_prompt_text() -> str:
+    assistant = load_mvp_assistant()
+    system_prompt_path = REPO_ROOT / assistant.system_prompt
+    if not system_prompt_path.exists():
+        raise ValueError(f"MVP assistant system prompt not found: {assistant.system_prompt}")
+    return system_prompt_path.read_text(encoding="utf-8")
+
+
 def assistant_summary() -> dict[str, Any]:
     assistant = load_mvp_assistant()
     return {

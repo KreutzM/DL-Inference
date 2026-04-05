@@ -6,9 +6,9 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from .assistant_config import assistant_summary, load_mvp_assistant
+from .assistant_config import assistant_summary, load_mvp_assistant, load_mvp_system_prompt_text
 from .openrouter import OpenRouterClient, load_openrouter_settings
-from .routing import list_models, resolve_model
+from .routing import list_models, load_mvp_model_route, resolve_model
 
 app = FastAPI(title="Repo2 Gateway", version="0.1.0")
 
@@ -54,12 +54,17 @@ def chat_completions(request: ChatCompletionRequest) -> dict[str, object]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     assistant = load_mvp_assistant()
-    if assistant.model != selected_model:
+    model_route = load_mvp_model_route()
+    if assistant.model != selected_model or model_route.alias != assistant.model:
         raise HTTPException(status_code=400, detail="Requested model does not match the MVP assistant config")
 
+    system_prompt = load_mvp_system_prompt_text()
+    upstream_messages = [{"role": "system", "content": system_prompt}] + [
+        message.model_dump() for message in request.messages
+    ]
     openrouter_payload = {
-        "model": assistant.model,
-        "messages": [message.model_dump() for message in request.messages],
+        "model": model_route.provider_model_id,
+        "messages": upstream_messages,
         "temperature": request.temperature,
         "stream": False,
     }
@@ -80,7 +85,7 @@ def chat_completions(request: ChatCompletionRequest) -> dict[str, object]:
         "id": f"chatcmpl-{uuid4().hex[:12]}",
         "object": "chat.completion",
         "created": int(time()),
-        "model": assistant.model,
+        "model": model_route.alias,
         "assistant": assistant_summary(),
         "choices": [
             {

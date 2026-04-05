@@ -3,13 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import blake2b
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 import json
 import math
 import re
 
+import httpx
+
 from .config import (
     ChunkingConfig,
+    CollectionConfig,
     EmbeddingsConfig,
     KnowledgeBaseConfig,
     RetrievalConfig,
@@ -27,6 +30,76 @@ class KnowledgeChunk:
     title: str | None
     text: str
     metadata: dict[str, Any]
+
+
+class VectorStoreClient(Protocol):
+    def ensure_collection(self, collection: CollectionConfig) -> None: ...
+
+    def upsert(self, collection_name: str, records: list[dict[str, Any]]) -> None: ...
+
+    def search(self, collection_name: str, vector: list[float], limit: int) -> list[dict[str, Any]]: ...
+
+
+class QdrantVectorStoreClient:
+    def __init__(self, config: VectorStoreConfig) -> None:
+        self.config = config
+
+    def _headers(self) -> dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.config.api_key:
+            headers["api-key"] = self.config.api_key
+        return headers
+
+    def _request(self, method: str, path: str, json_payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        with httpx.Client(timeout=self.config.timeout_seconds) as client:
+            response = client.request(
+                method,
+                f"{self.config.url}{path}",
+                headers=self._headers(),
+                json=json_payload,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    def ensure_collection(self, collection: CollectionConfig) -> None:
+        response = httpx.get(
+            f"{self.config.url}/collections/{collection.name}",
+            headers=self._headers(),
+            timeout=self.config.timeout_seconds,
+        )
+        if response.status_code == 200:
+            return
+        if response.status_code != 404:
+            response.raise_for_status()
+        payload = {"vectors": {"size": collection.vector_size, "distance": collection.distance}}
+        self._request("PUT", f"/collections/{collection.name}", payload)
+
+    def upsert(self, collection_name: str, records: list[dict[str, Any]]) -> None:
+        points = [
+            {
+                "id": record["point_id"],
+                "vector": record["embedding"],
+                "payload": {key: value for key, value in record.items() if key not in {"point_id", "embedding"}},
+            }
+            for record in records
+        ]
+        self._request("PUT", f"/collections/{collection_name}/points?wait=true", {"points": points})
+
+    def search(self, collection_name: str, vector: list[float], limit: int) -> list[dict[str, Any]]:
+        payload = {
+            "vector": vector,
+            "limit": limit,
+            "with_payload": True,
+            "with_vectors": False,
+        }
+        response = self._request("POST", f"/collections/{collection_name}/points/search", payload)
+        return response.get("result", []) if isinstance(response, dict) else []
+
+
+def build_vector_store_client(config: VectorStoreConfig) -> VectorStoreClient:
+    if config.backend != "qdrant":
+        raise ValueError(f"Unsupported vector store backend for MVP: {config.backend}")
+    return QdrantVectorStoreClient(config)
 
 
 def tokenize(text: str) -> list[str]:
@@ -72,8 +145,13 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right))
 
 
-def _vector_store_path(kb: KnowledgeBaseConfig, vector_store: VectorStoreConfig) -> Path:
-    return vector_store.root / vector_store.filename_template.format(knowledge_base=kb.name)
+def _collection_name(kb: KnowledgeBaseConfig, vector_store: VectorStoreConfig) -> str:
+    return vector_store.collection_name_template.format(knowledge_base=kb.collection)
+
+
+def _point_id(kb: KnowledgeBaseConfig, chunk: KnowledgeChunk) -> int:
+    digest = blake2b(f"{kb.name}:{chunk.chunk_id}".encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big") & ((1 << 63) - 1)
 
 
 def _load_source_chunks(kb: KnowledgeBaseConfig, chunking: ChunkingConfig) -> list[KnowledgeChunk]:
@@ -105,18 +183,12 @@ def _load_source_chunks(kb: KnowledgeBaseConfig, chunking: ChunkingConfig) -> li
     return chunks
 
 
-def _write_store(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-
-
-def _read_store(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise FileNotFoundError(f"Vector store not found: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"Vector store payload must be a mapping: {path}")
-    return data
+def _ensure_embedding_alignment(embeddings: EmbeddingsConfig, collection: CollectionConfig) -> None:
+    if embeddings.dimensions != collection.vector_size:
+        raise ValueError(
+            "Embedding dimensions and collection vector size must match for the MVP: "
+            f"{embeddings.dimensions} != {collection.vector_size}"
+        )
 
 
 def ingest_knowledge_base(
@@ -124,20 +196,27 @@ def ingest_knowledge_base(
     embeddings: EmbeddingsConfig,
     chunking: ChunkingConfig,
     vector_store: VectorStoreConfig,
+    collection: CollectionConfig,
 ) -> dict[str, Any]:
+    _ensure_embedding_alignment(embeddings, collection)
     chunks = _load_source_chunks(kb, chunking)
-    store_path = _vector_store_path(kb, vector_store)
-    records: list[dict[str, Any]] = []
+    if not chunks:
+        raise FileNotFoundError(f"No source documents found for MVP knowledge base: {kb.name}")
+    store = build_vector_store_client(vector_store)
+    collection_name = _collection_name(kb, vector_store)
+    store.ensure_collection(collection)
 
+    records: list[dict[str, Any]] = []
     for chunk in chunks:
         records.append(
             {
+                "point_id": _point_id(kb, chunk),
                 "source_id": f"{kb.name}:{chunk.chunk_id}",
                 "knowledge_base": kb.name,
                 "collection": kb.collection,
                 "document_id": chunk.document_id,
                 "chunk_id": chunk.chunk_id,
-                "source_path": chunk.source_path,
+                "source": chunk.source_path,
                 "title": chunk.title,
                 "text": chunk.text,
                 "embedding": embed_text(chunk.text, embeddings.dimensions, embeddings.normalize),
@@ -145,37 +224,15 @@ def ingest_knowledge_base(
             }
         )
 
-    payload = {
-        "knowledge_base": kb.name,
-        "collection": kb.collection,
-        "assistant": kb.assistant,
-        "vector_store": {
-            "backend": vector_store.backend,
-            "path": store_path.as_posix(),
-        },
-        "embeddings": {
-            "provider": embeddings.provider,
-            "model": embeddings.model,
-            "dimensions": embeddings.dimensions,
-            "normalize": embeddings.normalize,
-        },
-        "chunking": {
-            "target_tokens": chunking.target_tokens,
-            "overlap_tokens": chunking.overlap_tokens,
-        },
-        "documents_ingested": len({item.document_id for item in chunks}),
-        "chunks_indexed": len(records),
-        "records": records,
-    }
-    _write_store(store_path, payload)
+    store.upsert(collection_name, records)
     return {
         "status": "ok",
         "knowledge_base": kb.name,
         "assistant": kb.assistant,
-        "collection": kb.collection,
-        "documents_ingested": payload["documents_ingested"],
-        "chunks_indexed": payload["chunks_indexed"],
-        "vector_store_path": store_path.as_posix(),
+        "collection": collection_name,
+        "documents_ingested": len({item.document_id for item in chunks}),
+        "chunks_indexed": len(records),
+        "vector_store_path": f"{vector_store.url}/collections/{collection_name}",
         "meta": {
             "embeddings_provider": embeddings.provider,
             "embeddings_model": embeddings.model,
@@ -192,43 +249,31 @@ def retrieve_knowledge(
     embeddings: EmbeddingsConfig,
     retrieval: RetrievalConfig,
     vector_store: VectorStoreConfig,
+    collection: CollectionConfig,
     top_k: int | None = None,
 ) -> dict[str, Any]:
-    store_path = _vector_store_path(kb, vector_store)
-    store = _read_store(store_path)
-    records = store.get("records", [])
-    if not isinstance(records, list):
-        raise ValueError(f"Vector store payload is invalid: {store_path}")
-
+    _ensure_embedding_alignment(embeddings, collection)
+    store = build_vector_store_client(vector_store)
+    collection_name = _collection_name(kb, vector_store)
     query_embedding = embed_text(query, embeddings.dimensions, embeddings.normalize)
-    scored_records: list[dict[str, Any]] = []
-    for record in records:
-        if not isinstance(record, dict):
-            continue
-        embedding = record.get("embedding", [])
-        if not isinstance(embedding, list):
-            continue
-        scored_record = dict(record)
-        scored_record["score"] = cosine_similarity(query_embedding, [float(value) for value in embedding])
-        scored_records.append(scored_record)
-
     limit = max(1, top_k or retrieval.top_k)
-    scored_records.sort(key=lambda item: item["score"], reverse=True)
-    selected = scored_records[:limit]
+    selected = store.search(collection_name, query_embedding, limit)
 
     sources: list[dict[str, Any]] = []
     citations: list[dict[str, Any]] = []
     for index, item in enumerate(selected, start=1):
-        source_id = str(item.get("source_id", f"{kb.name}:{item.get('chunk_id', index)}"))
+        payload = item.get("payload", {}) if isinstance(item, dict) else {}
+        source_id = str(payload.get("source_id", f"{kb.name}:chunk-{index}"))
+        score = float(item.get("score", 0.0))
         source = {
             "source_id": source_id,
-            "document_id": str(item.get("document_id", "")),
-            "chunk_id": str(item.get("chunk_id", "")),
-            "score": float(item.get("score", 0.0)),
-            "title": item.get("title"),
-            "source_path": item.get("source_path"),
-            "text": str(item.get("text", "")),
-            "metadata": dict(item.get("metadata", {})) if isinstance(item.get("metadata"), dict) else {},
+            "document_id": str(payload.get("document_id", "")),
+            "chunk_id": str(payload.get("chunk_id", "")),
+            "score": score,
+            "source": payload.get("source"),
+            "title": payload.get("title"),
+            "text": str(payload.get("text", "")),
+            "metadata": dict(payload.get("metadata", {})) if isinstance(payload.get("metadata"), dict) else {},
         }
         sources.append(source)
         citations.append(
@@ -237,8 +282,8 @@ def retrieve_knowledge(
                 "source_id": source_id,
                 "document_id": source["document_id"],
                 "chunk_id": source["chunk_id"],
-                "source_path": source["source_path"],
-                "score": source["score"],
+                "source": source["source"],
+                "score": score,
             }
         )
 
@@ -251,8 +296,7 @@ def retrieve_knowledge(
         "sources": sources,
         "citations": citations,
         "meta": {
-            "vector_store_path": store_path.as_posix(),
-            "stored_chunks": len(records),
+            "collection": collection_name,
             "returned_chunks": len(sources),
             "embeddings_provider": embeddings.provider,
             "embeddings_model": embeddings.model,

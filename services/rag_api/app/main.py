@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from .config import (
     load_chunking_config,
+    load_collection_config,
     load_embeddings_config,
     load_knowledge_base_config,
     load_mvp_assistant_config,
@@ -47,8 +48,8 @@ class RetrievedSource(BaseModel):
     document_id: str
     chunk_id: str
     score: float
+    source: str | None = None
     title: str | None = None
-    source_path: str | None = None
     text: str
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -58,7 +59,7 @@ class CitationItem(BaseModel):
     source_id: str
     document_id: str
     chunk_id: str
-    source_path: str | None = None
+    source: str | None = None
     score: float
 
 
@@ -102,8 +103,9 @@ def ingest(request: IngestRequest) -> IngestResponse:
     embeddings = load_embeddings_config()
     chunking = load_chunking_config()
     vector_store = load_vector_store_config()
+    collection = load_collection_config(kb.collection)
 
-    payload = ingest_knowledge_base(kb, embeddings, chunking, vector_store)
+    payload = ingest_knowledge_base(kb, embeddings, chunking, vector_store, collection)
     if request.force:
         payload["meta"]["force"] = True
     return IngestResponse(**payload)
@@ -119,6 +121,7 @@ def retrieve(request: RetrieveRequest) -> RetrieveResponse:
     embeddings = load_embeddings_config()
     retrieval = load_retrieval_config()
     vector_store = load_vector_store_config()
+    collection = load_collection_config(kb.collection)
 
     try:
         payload = retrieve_knowledge(
@@ -128,6 +131,7 @@ def retrieve(request: RetrieveRequest) -> RetrieveResponse:
             embeddings=embeddings,
             retrieval=retrieval,
             vector_store=vector_store,
+            collection=collection,
             top_k=request.top_k,
         )
     except FileNotFoundError as exc:

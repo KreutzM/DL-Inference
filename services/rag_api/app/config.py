@@ -72,10 +72,19 @@ class RetrievalConfig:
 
 
 @dataclass(frozen=True)
+class CollectionConfig:
+    name: str
+    vector_size: int
+    distance: str
+
+
+@dataclass(frozen=True)
 class VectorStoreConfig:
     backend: str
-    root: Path
-    filename_template: str
+    url: str
+    api_key: str | None
+    timeout_seconds: float
+    collection_name_template: str
 
 
 def load_mvp_assistant_config() -> MvpAssistantConfig:
@@ -134,13 +143,29 @@ def load_vector_store_config() -> VectorStoreConfig:
     vector_store = data.get("vector_store", {})
     if not isinstance(vector_store, dict):
         raise ValueError("configs/rag/vector_store.yaml must define a mapping under 'vector_store'")
-    root = vector_store.get("root", "knowledge/processed/vector_store")
-    filename_template = str(vector_store.get("filename_template", "{knowledge_base}.json"))
+
     return VectorStoreConfig(
-        backend=str(vector_store.get("backend", "local-json")),
-        root=_resolve_path(str(root)),
-        filename_template=filename_template,
+        backend=str(vector_store.get("backend", "qdrant")),
+        url=os.environ.get("QDRANT_URL", str(vector_store.get("url", "http://qdrant:6333"))).rstrip("/"),
+        api_key=os.environ.get("QDRANT_API_KEY", "").strip() or None,
+        timeout_seconds=float(vector_store.get("timeout_seconds", 10.0)),
+        collection_name_template=str(vector_store.get("collection_name_template", "{knowledge_base}")),
     )
+
+
+def load_collection_config(name: str) -> CollectionConfig:
+    data = _read_yaml(repo_root() / "configs" / "rag" / "collections.yaml")
+    collections = data.get("collections", {})
+    if not isinstance(collections, dict):
+        raise ValueError("configs/rag/collections.yaml must define a mapping under 'collections'")
+
+    config = collections.get(name)
+    if not isinstance(config, dict):
+        raise ValueError(f"Unknown MVP collection: {name}")
+
+    vector_size = int(config.get("vector_size", 384))
+    distance = str(config.get("distance", "Cosine"))
+    return CollectionConfig(name=name, vector_size=vector_size, distance=distance)
 
 
 def load_knowledge_base_config(name: str | None = None) -> KnowledgeBaseConfig:

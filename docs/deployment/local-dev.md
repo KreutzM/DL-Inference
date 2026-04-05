@@ -2,11 +2,11 @@
 
 Suggested first dev stack:
 
-- Qdrant
-- LiteLLM proxy
-- one inference backend (vLLM or SGLang)
-- LibreChat or Open WebUI
+- local vector store
+- local embeddings
 - repo-owned gateway and RAG API
+- OpenRouter connectivity for chat completion
+- one assistant and one knowledge base
 
 ## Typical flow
 
@@ -14,6 +14,20 @@ Suggested first dev stack:
 cp .env.example .env
 python -m repo2ctl.cli up-dev
 python -m repo2ctl.cli smoke
+```
+
+## MVP RAG smoke path
+
+The first runnable RAG slice uses the checked-in `mvp-one` knowledge base and the repo-owned `services/rag_api` service.
+
+```bash
+python -m repo2ctl.cli up-dev
+curl -X POST http://127.0.0.1:8010/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"assistant":"mvp-openrouter","knowledge_base":"mvp-one"}'
+curl -X POST http://127.0.0.1:8010/retrieve \
+  -H "Content-Type: application/json" \
+  -d '{"assistant":"mvp-openrouter","knowledge_base":"mvp-one","query":"How do I reset settings in JAWS?"}'
 ```
 
 ## Cross-platform operator commands

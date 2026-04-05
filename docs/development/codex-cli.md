@@ -112,11 +112,14 @@ Use explorer-mini and reviewer in parallel, then combine the findings.
 
 The repo uses canonical service roots under `services/`.
 Current checked-in service roots include `services/assistant-config/`, `services/gateway/`, `services/inference-manager/`, `services/ops-api/`, `services/rag_api/`, and `services/ui-lib/`.
+Treat those paths as the active service-root contract; older path names are not active guidance.
 Before editing:
 - keep the touched service root consistent with this layout
 - avoid introducing parallel roots
 - only do a path migration when the task explicitly asks for it
 - when migrating, update code, tests, Dockerfiles, compose files, scripts, and docs together
+
+For MVP planning and implementation, start from `docs/product/mvp-contract.md`.
 
 ## Review info after each run
 

@@ -1,12 +1,13 @@
 # Local Dev
 
-Suggested first dev stack:
+Suggested first dev stack for the MVP:
 
-- Qdrant
-- LiteLLM proxy
-- one inference backend (vLLM or SGLang)
-- LibreChat or Open WebUI
-- repo-owned gateway and RAG API
+- local vector store
+- local embeddings
+- repo-owned gateway
+- repo-owned RAG API
+- OpenRouter connectivity for chat completion
+- one assistant and one knowledge base
 
 ## Typical flow
 
@@ -43,4 +44,4 @@ Use these canonical repo-owned service directories in docs, imports, tests, and 
 - `services/gateway`
 - `services/rag_api`
 
-See also `docs/development/codex-cli.md`.
+See also `docs/product/mvp-contract.md` and `docs/development/codex-cli.md`.

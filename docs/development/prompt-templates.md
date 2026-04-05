@@ -16,6 +16,7 @@ Constraints:
 - do not create parallel service roots
 - no unrelated refactors
 - update docs/tests if behavior or workflow changes
+- follow `docs/product/mvp-contract.md` for MVP scope decisions
 
 Validation:
 - python -m repo2ctl.cli lint

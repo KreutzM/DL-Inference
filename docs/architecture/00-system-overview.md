@@ -2,15 +2,16 @@
 
 This repository defines a self-hosted assistant platform with:
 
-- one or more local inference servers
+- an API-first MVP centered on OpenRouter-backed chat completion
 - a stable gateway layer
 - a repo-owned RAG API
 - assistant configurations stored as files
-- one or more UIs for testing and operations
+- no UI requirement in the MVP
 
 ## Core principle
 
 The platform should remain **OpenAI-compatible at the edge** while staying flexible internally.
+The active MVP contract is documented in `docs/product/mvp-contract.md`.
 
 ## Major subsystems
 

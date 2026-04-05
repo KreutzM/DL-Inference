@@ -2,7 +2,7 @@
 
 A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assistant platform with:
 
-- local multi-GPU inference on 2x RTX 4090
+- an API-first MVP that uses OpenRouter for chat completion
 - an OpenAI/OpenRouter-compatible API surface
 - Custom-GPT-like assistants with system prompts, knowledge bases, and configurable behavior
 - a production-oriented RAG stack
@@ -10,17 +10,18 @@ A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assista
 
 ## Primary goals
 
-1. Run strong local models behind a stable API.
-2. Provide a clean gateway layer that can route to local backends and optional cloud backends.
+1. Ship a precise, runnable MVP contract for API-first assistant workflows.
+2. Provide a clean gateway layer with repo-owned routing and repo-owned RAG.
 3. Support assistant configurations, knowledge bases, and retrieval pipelines as first-class repo artifacts.
 4. Keep the repository ready for iterative implementation with Codex CLI.
 
 ## Recommended stack
 
-- Inference: vLLM and/or SGLang
-- Gateway: LiteLLM Proxy plus a repo-owned gateway facade
-- Main UI: LibreChat
-- Secondary UI / internal testing: Open WebUI
+- Inference: OpenRouter for the MVP chat-completion path
+- Gateway: repo-owned gateway facade
+- RAG: repo-owned RAG API plus local embeddings and vector store
+- Main UI: out of MVP scope
+- Secondary UI / internal testing: out of MVP scope
 - Vector DB: Qdrant
 - RAG orchestration: LlamaIndex
 - Reverse proxy: Caddy (default) or Nginx
@@ -66,7 +67,7 @@ python -m repo2ctl.cli review-info --base origin/main
 
 ## Current service-path layout
 
-The repo uses canonical service roots under `services/`:
+The repo uses canonical service roots under `services/` and treats them as the active path contract:
 
 - `services/assistant-config/`
 - `services/gateway/`
@@ -80,6 +81,7 @@ Codex guidance:
 - avoid introducing parallel roots
 - only migrate paths when a task explicitly asks for it
 - if a migration is requested, update code, imports, tests, Dockerfiles, compose files, scripts, and docs together
+- do not treat older path names as active guidance
 
 ## Quick start
 
@@ -140,11 +142,11 @@ python -m repo2ctl.cli smoke
 
 ## Suggested first implementation milestones
 
-1. Bring up Qdrant, LiteLLM, and a minimal API gateway.
-2. Add one local inference backend.
+1. Read `docs/product/mvp-contract.md`.
+2. Bring up the repo-owned gateway and RAG API around the MVP path.
 3. Implement the RAG ingest/retrieve path in the active repo-owned RAG service tree.
-4. Wire LibreChat to the gateway.
-5. Add one real assistant config.
+4. Add one real assistant config and one knowledge base.
+5. Validate the non-streaming OpenRouter-backed chat-completions flow.
 
 ## Directory map
 

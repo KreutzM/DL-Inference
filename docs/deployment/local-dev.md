@@ -30,6 +30,9 @@ curl -X POST http://127.0.0.1:8010/ingest \
 curl -X POST http://127.0.0.1:8010/retrieve \
   -H "Content-Type: application/json" \
   -d '{"assistant":"mvp-openrouter","knowledge_base":"mvp-one","query":"How do I reset settings in JAWS?"}'
+curl -X POST http://127.0.0.1:4000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"mvp_openrouter_chat","messages":[{"role":"user","content":"How do I reset settings in JAWS?"}],"stream":false}'
 ```
 
 ## Cross-platform operator commands

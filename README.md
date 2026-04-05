@@ -110,6 +110,8 @@ Copy-Item .env.example .env
 
 Fill in required values.
 
+For the MVP, place your machine-local `OPENROUTER_API_KEY` in [`secrets.md`](/home/michael/src/DL-Inference/secrets.md) or export it in your shell before running the acceptance flow.
+
 ### 3. Start a minimal local stack
 
 Portable Python entrypoint (recommended)

@@ -13,6 +13,7 @@ htmlcov/
 # Env / secrets
 .env
 .env.*
+secrets.md
 !.env.example
 !.env.dev.example
 !.env.prod.example

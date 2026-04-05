@@ -2,11 +2,11 @@
 
 A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assistant platform with:
 
-- local multi-GPU inference on **2x RTX 4090**
-- an **OpenAI/OpenRouter-compatible API surface**
-- **Custom-GPT-like assistants** with system prompts, knowledge bases, and configurable behavior
-- a production-oriented **RAG stack**
-- Codex CLI friendly repo structure
+- local multi-GPU inference on 2x RTX 4090
+- an OpenAI/OpenRouter-compatible API surface
+- Custom-GPT-like assistants with system prompts, knowledge bases, and configurable behavior
+- a production-oriented RAG stack
+- a Codex CLI friendly repo structure
 
 ## Primary goals
 
@@ -17,19 +17,18 @@ A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assista
 
 ## Recommended stack
 
-- **Inference:** vLLM and/or SGLang
-- **Gateway:** LiteLLM Proxy
-- **Main UI:** LibreChat
-- **Secondary UI / internal testing:** Open WebUI
-- **Vector DB:** Qdrant
-- **RAG orchestration:** LlamaIndex
-- **Reverse proxy:** Caddy (default) or Nginx
-- **Observability:** Prometheus + Grafana + Loki + OpenTelemetry
+- Inference: vLLM and/or SGLang
+- Gateway: LiteLLM Proxy plus a repo-owned gateway facade
+- Main UI: LibreChat
+- Secondary UI / internal testing: Open WebUI
+- Vector DB: Qdrant
+- RAG orchestration: LlamaIndex
+- Reverse proxy: Caddy (default) or Nginx
+- Observability: Prometheus + Grafana + Loki + OpenTelemetry
 
 ## Repo status
 
-This repository is a **base version / implementation scaffold**.
-It contains:
+This repository is an implementation scaffold. It contains:
 
 - a complete top-level repo structure
 - starter configs
@@ -38,7 +37,45 @@ It contains:
 - Codex-friendly instructions
 - evaluation and observability placeholders
 
-It does **not** yet contain a full production implementation.
+It does not yet contain a full production implementation.
+
+## Canonical service paths
+
+The canonical repo-owned service roots are:
+
+- `services/gateway/`
+- `services/rag_api/`
+
+Deprecated legacy paths must be removed from active use:
+
+- `services/gateway_pkg/`
+- `services/rag_api_pkg/`
+- `services/rag-api/`
+
+## Codex CLI workflow
+
+Default usage in this repo:
+
+- primary implementation model: `gpt-5.4-mini`
+- escalation model for planning/review: `gpt-5.4`
+
+Repo-specific Codex configuration lives in:
+
+- `.codex/config.toml`
+- `.codex/agents/`
+- `AGENTS.md`
+
+Recommended commands:
+
+```bash
+python -m repo2ctl.cli fmt
+python -m repo2ctl.cli lint
+python -m repo2ctl.cli test
+python -m repo2ctl.cli smoke
+python -m repo2ctl.cli review-info
+```
+
+See also `docs/development/codex-cli.md`.
 
 ## Quick start
 
@@ -49,16 +86,17 @@ Read:
 - `AGENTS.md`
 - `docs/architecture/00-system-overview.md`
 - `docs/deployment/local-dev.md`
+- `docs/development/codex-cli.md`
 
 ### 2. Prepare environment
 
-**Bash / Linux / macOS**
+Bash / Linux / macOS
 
 ```bash
 cp .env.example .env
 ```
 
-**PowerShell / Windows**
+PowerShell / Windows
 
 ```powershell
 Copy-Item .env.example .env
@@ -68,19 +106,19 @@ Fill in required values.
 
 ### 3. Start a minimal local stack
 
-**Portable Python entrypoint (recommended)**
+Portable Python entrypoint (recommended)
 
 ```bash
 python -m repo2ctl.cli up-dev
 ```
 
-**PowerShell wrapper**
+PowerShell wrapper
 
 ```powershell
 ./scripts/repo2.ps1 up-dev
 ```
 
-**GNU Make (optional, mainly Linux/macOS)**
+GNU Make (optional, mainly Linux/macOS)
 
 ```bash
 make up-dev
@@ -100,13 +138,13 @@ python -m repo2ctl.cli smoke
 
 1. Bring up Qdrant, LiteLLM, and a minimal API gateway.
 2. Add one local inference backend (vLLM first or SGLang first).
-3. Implement the RAG ingest/retrieve path in `services/rag-api`.
+3. Implement the RAG ingest/retrieve path in `services/rag_api`.
 4. Wire LibreChat to the gateway.
 5. Add one real assistant config (for example `jaws-support.yaml`).
 
 ## Directory map
 
-- `docs/` — architecture, product, deployment, API docs
+- `docs/` — architecture, product, deployment, development docs
 - `deploy/` — compose stacks, systemd, reverse proxy, deployment scripts
 - `configs/` — declarative config for inference, routing, RAG, assistants, policies
 - `services/` — repo-owned code and APIs
@@ -119,16 +157,15 @@ python -m repo2ctl.cli smoke
 
 ## Design rules
 
-- Keep **repo-owned logic** in `services/`, not inside third-party tools.
-- Treat **LibreChat** and **Open WebUI** as pluggable UIs, not the core system.
-- Keep **knowledge artifacts** versioned and separate from runtime data.
-- Prefer **declarative config** over hidden UI settings.
-- Keep the stack **OpenAI-compatible** at the edge to simplify switching providers.
-
+- Keep repo-owned logic in `services/`, not inside third-party tools.
+- Treat LibreChat and Open WebUI as pluggable UIs, not the core system.
+- Keep knowledge artifacts versioned and separate from runtime data.
+- Prefer declarative config over hidden UI settings.
+- Keep the stack OpenAI-compatible at the edge to simplify switching providers.
 
 ## Cross-platform notes
 
-- The repo keeps **Python** as the portable operator entrypoint via `python -m repo2ctl.cli ...`.
+- The repo keeps Python as the portable operator entrypoint via `python -m repo2ctl.cli ...`.
 - Bash scripts remain available for Linux-first operation.
 - PowerShell equivalents are provided for the main operator flows in `scripts/*.ps1` and `deploy/scripts/*.ps1`.
 - Linux-only GPU serving remains the primary target for local inference backends like vLLM and SGLang. Under Windows, the practical path is usually Docker Desktop + WSL2 or a remote Linux GPU server.

@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -e .[dev]
 
 COPY . /app
 
-CMD ["uvicorn", "services.gateway.app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "services.rag_api.app.main:app", "--host", "0.0.0.0", "--port", "8010"]

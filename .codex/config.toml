@@ -1,18 +1,40 @@
-model = "gpt-5.4"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "low"
+review_model = "gpt-5.4"
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "disabled"
+profile = "implement"
 
 [sandbox_workspace_write]
 network_access = false
 writable_roots = ["./reports", "./tmp", "./artifacts"]
 
+[agents]
+max_threads = 4
+max_depth = 1
+
+[profiles.implement]
+model = "gpt-5.4-mini"
+model_reasoning_effort = "low"
+plan_mode_reasoning_effort = "low"
+service_tier = "flex"
+
 [profiles.review]
 model = "gpt-5.4"
-service_tier = "fast"
+model_reasoning_effort = "medium"
 plan_mode_reasoning_effort = "medium"
+service_tier = "fast"
 
-[profiles.mini]
+[profiles.research]
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "medium"
+service_tier = "fast"
+web_search = "live"
+
+[profiles.mini-fast]
 model = "gpt-5.4-mini"
+model_reasoning_effort = "minimal"
+plan_mode_reasoning_effort = "none"
 service_tier = "flex"
-plan_mode_reasoning_effort = "low"

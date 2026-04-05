@@ -1,8 +1,14 @@
 name: docs
+
 on: [push, pull_request]
+
 jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "TODO docs checks"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .[dev]
+      - run: python -m repo2ctl.cli docs

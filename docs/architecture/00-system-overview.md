@@ -14,9 +14,18 @@ The platform should remain **OpenAI-compatible at the edge** while staying flexi
 
 ## Major subsystems
 
-- `services/gateway` — public API surface and routing façade
-- `services/inference-manager` — model profile awareness and launcher orchestration
-- `services/rag-api` — ingestion, retrieval, reranking, citation assembly
-- `services/assistant-config` — assistant prompts, templates, policies
+- `services/gateway` — public API surface and routing facade
+- `services/inference-manager` — future model profile awareness and launcher orchestration
+- `services/rag_api` — ingestion, retrieval, reranking, and citation assembly
+- `services/assistant-config` — assistant prompts, templates, and policies
 - `configs/` — the declarative truth of runtime behavior
 - `deploy/` — composition and environment-specific deployment
+
+## Canonical implementation paths
+
+The repo-owned service roots are:
+
+- `services/gateway`
+- `services/rag_api`
+
+Legacy paths such as `services/gateway_pkg`, `services/rag_api_pkg`, and `services/rag-api` are deprecated and should be removed from active use.

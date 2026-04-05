@@ -44,19 +44,37 @@ def run(cmd: list[str], check: bool = True) -> int:
     return completed.returncode
 
 
+def capture(cmd: list[str]) -> str:
+    completed = subprocess.run(
+        cmd,
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        return "unknown"
+    return completed.stdout.strip() or "unknown"
+
+
 def cmd_help(_: argparse.Namespace) -> int:
-    print("Commands: fmt lint test smoke up-dev up-prod down logs health tree prepare-model-cache backup restore")
+    print(
+        "Commands: fmt lint docs test smoke up-dev up-prod down logs health tree "
+        "prepare-model-cache backup restore review-info"
+    )
     return 0
 
 
 def cmd_fmt(_: argparse.Namespace) -> int:
-    print("TODO: run formatting tools (ruff format / prettier / yamlfix)")
-    return 0
+    return run([sys.executable, "scripts/fmt_repo.py"])
 
 
 def cmd_lint(_: argparse.Namespace) -> int:
-    print("TODO: run lint tools (ruff / mypy / yamllint / markdownlint)")
-    return 0
+    return run([sys.executable, "scripts/lint_repo.py"])
+
+
+def cmd_docs(_: argparse.Namespace) -> int:
+    return run([sys.executable, "scripts/check_docs_refs.py"])
 
 
 def cmd_test(_: argparse.Namespace) -> int:
@@ -89,7 +107,7 @@ def cmd_logs(args: argparse.Namespace) -> int:
 def cmd_health(args: argparse.Namespace) -> int:
     with urlopen(args.url) as response:  # noqa: S310 - local operator helper
         body = response.read().decode("utf-8").strip()
-    print(body)
+        print(body)
     return 0
 
 
@@ -120,8 +138,45 @@ def cmd_restore(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review_info(args: argparse.Namespace) -> int:
+    branch = capture(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    head = capture(["git", "rev-parse", "HEAD"])
+    commit_range = "unknown"
+    if args.base:
+        commit_range = f"{args.base}..HEAD"
+    elif head != "unknown":
+        commit_range = capture(["git", "rev-parse", "HEAD~1"])
+        if commit_range != "unknown":
+            commit_range = f"{commit_range}..HEAD"
+        else:
+            commit_range = "HEAD"
+
+    changed = capture(["git", "status", "--short"])
+    print("Review info:")
+    print(f"- Branch: {branch}")
+    print(f"- HEAD commit: {head}")
+    print(f"- Commit range: {commit_range}")
+    print("- Ziel der Änderung: unknown")
+    print("- Wichtigste geänderte Dateien:")
+    if changed == "unknown":
+        print("  unknown")
+    elif not changed:
+        print("  none")
+    else:
+        for line in changed.splitlines():
+            print(f"  {line}")
+    print("- Ausgeführte Validierung: unknown")
+    print("- Ergebnis der Validierung: unknown")
+    print("- Offene Risiken / TODOs: unknown")
+    print("- Empfohlene nächste Schritte: unknown")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="repo2ctl", description="Cross-platform operator CLI for Repo 2")
+    parser = argparse.ArgumentParser(
+        prog="repo2ctl",
+        description="Cross-platform operator CLI for Repo 2",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add(name: str, func) -> None:
@@ -131,6 +186,7 @@ def build_parser() -> argparse.ArgumentParser:
     add("help", cmd_help)
     add("fmt", cmd_fmt)
     add("lint", cmd_lint)
+    add("docs", cmd_docs)
     add("test", cmd_test)
     add("smoke", cmd_smoke)
     add("up-dev", cmd_up_dev)
@@ -151,6 +207,11 @@ def build_parser() -> argparse.ArgumentParser:
     tree = sub.add_parser("tree")
     tree.add_argument("--max-depth", type=int, default=3)
     tree.set_defaults(func=cmd_tree)
+
+    review_info = sub.add_parser("review-info")
+    review_info.add_argument("--base")
+    review_info.set_defaults(func=cmd_review_info)
+
     return parser
 
 

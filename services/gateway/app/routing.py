@@ -1,5 +1,56 @@
-def list_models() -> list[dict]:
-    return [
-        {"id": "local-default", "object": "model", "owned_by": "repo2"},
-        {"id": "local-qwen", "object": "model", "owned_by": "repo2"},
-    ]
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+MODELS_CONFIG = REPO_ROOT / "configs" / "inference" / "models.yaml"
+
+
+def _load_raw_models() -> dict[str, dict[str, Any]]:
+    data = yaml.safe_load(MODELS_CONFIG.read_text(encoding="utf-8")) or {}
+    models = data.get("models", {})
+    if not isinstance(models, dict):
+        raise ValueError("configs/inference/models.yaml must define a mapping under 'models'")
+    return models
+
+
+def list_models() -> list[dict[str, Any]]:
+    raw_models = _load_raw_models()
+    results: list[dict[str, Any]] = []
+
+    if raw_models:
+        first_model_id = next(iter(raw_models))
+        results.append(
+            {
+                "id": "local-default",
+                "object": "model",
+                "owned_by": "repo2",
+                "metadata": {"alias_for": first_model_id},
+            }
+        )
+
+    for model_name, config in raw_models.items():
+        results.append(
+            {
+                "id": model_name,
+                "object": "model",
+                "owned_by": "repo2",
+                "metadata": {
+                    "backend": config.get("backend"),
+                    "family": config.get("family"),
+                    "model_id": config.get("model_id"),
+                },
+            }
+        )
+    return results
+
+
+def resolve_model(model: str | None) -> str:
+    available = {item["id"] for item in list_models()}
+    candidate = model or "local-default"
+    if candidate not in available:
+        raise ValueError(f"Unknown model: {candidate}")
+    return candidate

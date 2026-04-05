@@ -1,5 +1,7 @@
 name: test
+
 on: [push, pull_request]
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -8,5 +10,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install pytest fastapi pydantic
-      - run: pytest tests -q
+      - run: pip install -e .[dev]
+      - run: python -m repo2ctl.cli test

@@ -1,6 +1,8 @@
 # AGENTS.md
 
-This repository is a monorepo scaffold for a self-hosted inference + RAG platform. It is intentionally Linux-first for GPU serving, but the repo operator workflow should stay usable from both Bash and PowerShell.
+This repository is developed primarily with **Codex CLI**.
+The default implementation model is **`gpt-5.4-mini`** for well-scoped work.
+Escalate to **`gpt-5.4`** for planning, architecture, deep debugging, ambiguous requirements, large refactors, or heavy review.
 
 ## Primary objective
 
@@ -11,61 +13,117 @@ Improve the repository while preserving these architectural goals:
 3. **Repo-owned RAG logic**
 4. **Config-driven assistants**
 5. **Clear separation between versioned knowledge and runtime data**
+6. **Codex-friendly implementation and review workflow**
 
-## Key directories
+## Canonical service roots
 
-- `services/` — repo-owned code
-- `configs/` — declarative system configuration
-- `deploy/` — docker compose, reverse proxy, systemd, deployment helpers
-- `knowledge/` — versioned knowledge assets
-- `data/` — runtime volumes and persistent state
-- `tests/` — smoke, integration, regression tests
-- `docs/` — architecture and operations docs
+Treat these paths as the single source of truth:
 
-## What counts as high-value work
+- `services/gateway/`
+- `services/rag_api/`
 
-Prioritize work that:
+Legacy paths are deprecated and must not be used for new work:
 
-- improves the local inference path
-- improves API compatibility and routing clarity
-- improves RAG quality and traceability
-- improves deployment reproducibility
-- improves testability and operational safety
+- `services/gateway_pkg/`
+- `services/rag_api_pkg/`
+- `services/rag-api/`
 
-## Constraints
+When changing imports, Dockerfiles, docs, tests, or compose files, always align them to the canonical paths above.
 
-- Do not add secrets to the repository.
-- Do not hardcode machine-specific absolute paths unless they are examples.
-- Do not silently move core logic into vendor tools.
-- Prefer adding or updating docs when changing architecture.
-- Keep compose files and config examples synchronized.
+## Model usage rules
 
-## Expected validation steps
+### Default: `gpt-5.4-mini`
+Use for:
+- scoped implementation tasks
+- config edits
+- docs updates
+- focused test additions
+- small to medium refactors with clear boundaries
 
-Before considering work complete, run what is relevant:
+Prompt and work style for `gpt-5.4-mini`:
+- Be explicit.
+- Follow the requested workflow exactly.
+- Prefer the smallest correct patch.
+- Do not rely on implicit assumptions.
+- State conservative assumptions in the final report.
+
+### Escalate to `gpt-5.4`
+Use for:
+- architecture planning
+- repo-wide consistency reviews
+- tricky debugging
+- unclear or conflicting requirements
+- multi-step design decisions
+- reviewing whether a Codex run was actually correct
+
+## Required execution pattern
+
+For any non-trivial task, follow this order:
+
+1. Inspect the relevant files and nearby docs.
+2. Summarize the intended change in 2–6 bullets before editing.
+3. Edit the minimum necessary set of files.
+4. Update docs when behavior, architecture, paths, or operator workflow change.
+5. Run relevant validation.
+6. End with the required **Review info** block.
+
+## Ambiguity handling
+
+- Do not stop for minor ambiguity if a conservative default is available.
+- Prefer the option that preserves architecture, portability, and testability.
+- If a decision is irreversible or high-risk, say so clearly in the final report.
+- Do not invent infrastructure that is not in scope.
+
+## Repo conventions
+
+### Code and config
+- Keep Python typed where practical.
+- Keep service stubs explicit and easy to replace later.
+- Keep config files readable and multiline, not compressed into one-liners.
+- Avoid hidden behavior.
+- Prefer declarative config over hardcoded logic.
+
+### Operator workflow
+- Prefer the portable Python entrypoint: `python -m repo2ctl.cli ...`
+- Keep PowerShell support aligned with Bash/Linux workflows.
+- If you add a Bash-oriented workflow, provide the PowerShell-equivalent path or route it through `repo2ctl`.
+
+### Validation
+Run what is relevant. Prefer these commands:
 
 ```bash
-make fmt
-make lint
-make test
-make smoke
+python -m repo2ctl.cli fmt
+python -m repo2ctl.cli lint
+python -m repo2ctl.cli test
+python -m repo2ctl.cli smoke
 ```
 
-If a target is not yet fully implemented, update the corresponding docs or TODO markers.
+If a command cannot be run, say exactly why in the final report.
 
-## Coding guidance
+## Definition of done
 
-- Python code should be typed where practical.
-- Service stubs should expose clear interfaces.
-- Config files should stay explicit and readable.
-- Preserve simple, predictable names.
-- Prefer a **portable Python entrypoint** for operator flows when possible.
-- If you add a Bash helper for a common repo task, add a matching `.ps1` variant or route both through `repo2ctl`.
+A change is only considered complete when it includes, where relevant:
+- code/config updates
+- matching docs updates
+- test or smoke coverage updates
+- consistent canonical path usage
+- a clear final review summary
 
-## Completion standard
+## Required final output
 
-A good change usually includes:
+At the end of each coding run, always provide this block exactly once:
 
-- code or config changes
-- documentation updates where needed
-- at least one test or smoke validation improvement
+```text
+Review info:
+- Branch:
+- HEAD commit:
+- Commit range:
+- Ziel der Änderung:
+- Wichtigste geänderte Dateien:
+- Ausgeführte Validierung:
+- Ergebnis der Validierung:
+- Offene Risiken / TODOs:
+- Empfohlene nächste Schritte:
+```
+
+If Git metadata is unavailable, explicitly say `unknown` instead of omitting the field.

@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.request import urlopen
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
 BASE_COMPOSE = ["deploy/compose/docker-compose.base.yml"]
 DEV_COMPOSE = BASE_COMPOSE + [
     "deploy/compose/docker-compose.dev.yml",
@@ -55,6 +56,13 @@ def capture(cmd: list[str]) -> str:
     if completed.returncode != 0:
         return "unknown"
     return completed.stdout.strip() or "unknown"
+
+
+def capture_lines(cmd: list[str]) -> list[str]:
+    output = capture(cmd)
+    if output == "unknown":
+        return []
+    return [line.strip() for line in output.splitlines() if line.strip()]
 
 
 def cmd_help(_: argparse.Namespace) -> int:
@@ -107,7 +115,7 @@ def cmd_logs(args: argparse.Namespace) -> int:
 def cmd_health(args: argparse.Namespace) -> int:
     with urlopen(args.url) as response:  # noqa: S310 - local operator helper
         body = response.read().decode("utf-8").strip()
-        print(body)
+    print(body)
     return 0
 
 
@@ -138,37 +146,109 @@ def cmd_restore(_: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_review_info(args: argparse.Namespace) -> int:
-    branch = capture(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-    head = capture(["git", "rev-parse", "HEAD"])
-    commit_range = "unknown"
-    if args.base:
-        commit_range = f"{args.base}..HEAD"
-    elif head != "unknown":
-        commit_range = capture(["git", "rev-parse", "HEAD~1"])
-        if commit_range != "unknown":
-            commit_range = f"{commit_range}..HEAD"
-        else:
-            commit_range = "HEAD"
+def _git_branch() -> str:
+    return capture(["git", "rev-parse", "--abbrev-ref", "HEAD"])
 
-    changed = capture(["git", "status", "--short"])
+
+def _git_head() -> str:
+    return capture(["git", "rev-parse", "HEAD"])
+
+
+def _git_upstream() -> str:
+    return capture(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]
+    )
+
+
+def _git_merge_base(base: str) -> str:
+    if not base or base == "unknown":
+        return "unknown"
+    return capture(["git", "merge-base", base, "HEAD"])
+
+
+def _git_working_tree() -> str:
+    status = capture(["git", "status", "--short"])
+    if status == "unknown":
+        return "unknown"
+    return "clean" if not status else "dirty"
+
+
+def _git_changed_files(base: str, limit: int) -> list[str]:
+    status_lines = capture_lines(["git", "status", "--short"])
+    names: list[str] = []
+
+    if status_lines:
+        for line in status_lines:
+            parts = line.split(maxsplit=1)
+            if len(parts) == 2:
+                names.append(parts[1])
+
+    if not names and base and base != "unknown":
+        merge_base = _git_merge_base(base)
+        if merge_base != "unknown":
+            names = capture_lines(["git", "diff", "--name-only", f"{merge_base}..HEAD"])
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for name in names:
+        if name not in seen:
+            seen.add(name)
+            deduped.append(name)
+
+    return deduped[:limit]
+
+
+def _commit_range(base: str) -> str:
+    if base and base != "unknown":
+        merge_base = _git_merge_base(base)
+        if merge_base != "unknown":
+            return f"{merge_base}..HEAD"
+        return f"{base}..HEAD"
+
+    head = _git_head()
+    if head == "unknown":
+        return "unknown"
+
+    previous = capture(["git", "rev-parse", "HEAD~1"])
+    if previous == "unknown":
+        return "HEAD"
+
+    return f"{previous}..HEAD"
+
+
+def _print_list_or_unknown(items: list[str], fallback: str = "unknown") -> None:
+    if not items:
+        print(f"- Wichtigste geänderte Dateien: {fallback}")
+        return
+
+    print("- Wichtigste geänderte Dateien:")
+    for item in items:
+        print(f"  - {item}")
+
+
+def cmd_review_info(args: argparse.Namespace) -> int:
+    branch = _git_branch()
+    head = _git_head()
+    upstream = _git_upstream()
+    base = args.base or upstream
+    if not base:
+        base = "unknown"
+
+    changed_files = _git_changed_files(base, args.changed_files_limit)
+
     print("Review info:")
     print(f"- Branch: {branch}")
     print(f"- HEAD commit: {head}")
-    print(f"- Commit range: {commit_range}")
-    print("- Ziel der Änderung: unknown")
-    print("- Wichtigste geänderte Dateien:")
-    if changed == "unknown":
-        print("  unknown")
-    elif not changed:
-        print("  none")
-    else:
-        for line in changed.splitlines():
-            print(f"  {line}")
-    print("- Ausgeführte Validierung: unknown")
-    print("- Ergebnis der Validierung: unknown")
-    print("- Offene Risiken / TODOs: unknown")
-    print("- Empfohlene nächste Schritte: unknown")
+    print(f"- Base branch: {base}")
+    print(f"- Upstream: {upstream}")
+    print(f"- Commit range: {_commit_range(base)}")
+    print(f"- Working tree: {_git_working_tree()}")
+    print(f"- Ziel der Änderung: {args.goal or 'unknown'}")
+    _print_list_or_unknown(changed_files)
+    print(f"- Ausgeführte Validierung: {args.validation or 'unknown'}")
+    print(f"- Ergebnis der Validierung: {args.validation_result or 'unknown'}")
+    print(f"- Offene Risiken / TODOs: {args.risks or 'unknown'}")
+    print(f"- Empfohlene nächste Schritte: {args.next_steps or 'unknown'}")
     return 0
 
 
@@ -210,6 +290,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     review_info = sub.add_parser("review-info")
     review_info.add_argument("--base")
+    review_info.add_argument("--goal")
+    review_info.add_argument("--validation")
+    review_info.add_argument("--validation-result")
+    review_info.add_argument("--risks")
+    review_info.add_argument("--next-steps")
+    review_info.add_argument("--changed-files-limit", type=int, default=12)
     review_info.set_defaults(func=cmd_review_info)
 
     return parser

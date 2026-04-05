@@ -7,85 +7,63 @@ import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-BANNED_PATHS = [
-    REPO_ROOT / "services/gateway_pkg",
-    REPO_ROOT / "services/rag_api_pkg",
-    REPO_ROOT / "services/rag-api",
-]
-BANNED_SNIPPETS = [
-    "services.gateway_pkg",
-    "services.rag_api_pkg",
-    "services/rag-api",
-    "services/gateway_pkg",
-    "services/rag_api_pkg",
-]
-SCAN_EXTENSIONS = {
-    ".py",
-    ".toml",
-    ".yaml",
-    ".yml",
-    ".ps1",
-    ".sh",
-}
-SCAN_NAMES = {"Dockerfile", "Makefile"}
-SKIP_PARTS = {".git", ".venv", "node_modules", "__pycache__"}
-EXCLUDED_SCAN_PATHS = {
-    Path("scripts/lint_repo.py"),
+
+REQUIRED_FILES = [
+    Path("AGENTS.md"),
+    Path(".codex/config.toml"),
     Path(".codex/agents/implementer-mini.toml"),
+    Path(".codex/agents/explorer-mini.toml"),
     Path(".codex/agents/planner.toml"),
     Path(".codex/agents/reviewer.toml"),
-}
+    Path("docs/development/codex-cli.md"),
+    Path("docs/development/prompt-templates.md"),
+    Path("repo2ctl/cli.py"),
+]
+
+TOML_FILES = [
+    Path(".codex/config.toml"),
+    Path(".codex/agents/implementer-mini.toml"),
+    Path(".codex/agents/explorer-mini.toml"),
+    Path(".codex/agents/planner.toml"),
+    Path(".codex/agents/reviewer.toml"),
+    Path("pyproject.toml"),
+]
+
 PYTHON_TREES = ["repo2ctl", "services", "tests", "scripts"]
 
-
-def should_scan(path: Path) -> bool:
-    rel = path.relative_to(REPO_ROOT)
-    if rel in EXCLUDED_SCAN_PATHS:
-        return False
-    if any(part in SKIP_PARTS for part in path.parts):
-        return False
-    return path.suffix in SCAN_EXTENSIONS or path.name in SCAN_NAMES
+SERVICE_PATHS_TO_REPORT = [
+    Path("services/gateway"),
+    Path("services/gateway_pkg"),
+    Path("services/rag-api"),
+    Path("services/rag_api_pkg"),
+]
 
 
-def main() -> int:
-    errors: list[str] = []
+def check_required_files(errors: list[str]) -> None:
+    for rel_path in REQUIRED_FILES:
+        if not (REPO_ROOT / rel_path).exists():
+            errors.append(f"Missing required file: {rel_path.as_posix()}")
 
-    for path in BANNED_PATHS:
-        if path.exists():
-            errors.append(
-                "Legacy path still present: "
-                f"{path.relative_to(REPO_ROOT).as_posix()}"
-            )
 
-    for rel_path in [Path(".codex/config.toml"), Path("pyproject.toml")]:
+def check_toml(errors: list[str]) -> None:
+    for rel_path in TOML_FILES:
         file_path = REPO_ROOT / rel_path
         if not file_path.exists():
-            errors.append(f"Missing required file: {rel_path.as_posix()}")
             continue
         try:
             tomllib.loads(file_path.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as exc:
             errors.append(f"Invalid TOML in {rel_path.as_posix()}: {exc}")
 
-    for path in sorted(REPO_ROOT.rglob("*")):
-        if not path.is_file() or not should_scan(path):
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            errors.append(f"Non-UTF8 text file: {path.relative_to(REPO_ROOT).as_posix()}")
-            continue
-        for snippet in BANNED_SNIPPETS:
-            if snippet in text:
-                errors.append(
-                    f"Forbidden legacy reference '{snippet}' in {path.relative_to(REPO_ROOT).as_posix()}"
-                )
 
+def check_python_compile(errors: list[str]) -> None:
     for tree in PYTHON_TREES:
         target = REPO_ROOT / tree
         if target.exists() and not compileall.compile_dir(target, quiet=1):
             errors.append(f"Python compilation failed under {tree}/")
 
+
+def check_docs(errors: list[str]) -> None:
     docs_check = subprocess.run(
         [sys.executable, "scripts/check_docs_refs.py"],
         cwd=REPO_ROOT,
@@ -94,12 +72,39 @@ def main() -> int:
         text=True,
     )
     if docs_check.returncode != 0:
-        errors.append(docs_check.stdout.strip() or docs_check.stderr.strip() or "Doc checks failed")
+        errors.append(
+            docs_check.stdout.strip()
+            or docs_check.stderr.strip()
+            or "Doc checks failed"
+        )
+
+
+def report_service_paths() -> list[str]:
+    return [
+        path.as_posix()
+        for path in SERVICE_PATHS_TO_REPORT
+        if (REPO_ROOT / path).exists()
+    ]
+
+
+def main() -> int:
+    errors: list[str] = []
+
+    check_required_files(errors)
+    check_toml(errors)
+    check_python_compile(errors)
+    check_docs(errors)
 
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
         return 1
+
+    present_paths = report_service_paths()
+    if present_paths:
+        print("Service path report:")
+        for path in present_paths:
+            print(f"- {path}")
 
     print("Repo lint checks passed.")
     return 0

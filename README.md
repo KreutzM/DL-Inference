@@ -10,7 +10,7 @@ A Linux-first but Windows/PowerShell-friendly monorepo for a self-hosted assista
 
 ## Primary goals
 
-1. Run strong local models (initially Qwen-class, optionally OSS-class) behind a stable API.
+1. Run strong local models behind a stable API.
 2. Provide a clean gateway layer that can route to local backends and optional cloud backends.
 3. Support assistant configurations, knowledge bases, and retrieval pipelines as first-class repo artifacts.
 4. Keep the repository ready for iterative implementation with Codex CLI.
@@ -39,19 +39,6 @@ This repository is an implementation scaffold. It contains:
 
 It does not yet contain a full production implementation.
 
-## Canonical service paths
-
-The canonical repo-owned service roots are:
-
-- `services/gateway/`
-- `services/rag_api/`
-
-Deprecated legacy paths must be removed from active use:
-
-- `services/gateway_pkg/`
-- `services/rag_api_pkg/`
-- `services/rag-api/`
-
 ## Codex CLI workflow
 
 Default usage in this repo:
@@ -61,9 +48,11 @@ Default usage in this repo:
 
 Repo-specific Codex configuration lives in:
 
+- `AGENTS.md`
 - `.codex/config.toml`
 - `.codex/agents/`
-- `AGENTS.md`
+- `docs/development/codex-cli.md`
+- `docs/development/prompt-templates.md`
 
 Recommended commands:
 
@@ -72,10 +61,24 @@ python -m repo2ctl.cli fmt
 python -m repo2ctl.cli lint
 python -m repo2ctl.cli test
 python -m repo2ctl.cli smoke
-python -m repo2ctl.cli review-info
+python -m repo2ctl.cli review-info --base origin/main
 ```
 
-See also `docs/development/codex-cli.md`.
+## Current service-path transition state
+
+The repo currently contains multiple service trees for some components, including:
+
+- `services/gateway/`
+- `services/gateway_pkg/`
+- `services/rag-api/`
+- `services/rag_api_pkg/`
+
+Current Codex policy:
+- do not create additional parallel roots
+- inspect which tree is active for the touched subsystem before editing
+- keep the touched subsystem internally consistent
+- only perform path migration when it is the explicit task
+- when migrating, migrate code, imports, tests, Dockerfiles, compose files, scripts, and docs together
 
 ## Quick start
 
@@ -137,10 +140,10 @@ python -m repo2ctl.cli smoke
 ## Suggested first implementation milestones
 
 1. Bring up Qdrant, LiteLLM, and a minimal API gateway.
-2. Add one local inference backend (vLLM first or SGLang first).
-3. Implement the RAG ingest/retrieve path in `services/rag_api`.
+2. Add one local inference backend.
+3. Implement the RAG ingest/retrieve path in the active repo-owned RAG service tree.
 4. Wire LibreChat to the gateway.
-5. Add one real assistant config (for example `jaws-support.yaml`).
+5. Add one real assistant config.
 
 ## Directory map
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from services.gateway.app.assistant_config import load_mvp_system_prompt_text
 from services.gateway.app.main import app
 
 
@@ -49,7 +50,10 @@ def test_chat_completions_maps_openrouter_response(monkeypatch):
     assert payload["assistant"]["metadata"]["assistant"] == "mvp-openrouter"
     assert payload["choices"][0]["message"]["content"] == "Hello from OpenRouter"
     assert payload["usage"] == {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}
-    assert dummy.calls[0]["model"] == "mvp_openrouter_chat"
+    assert dummy.calls[0]["model"] == "openai/gpt-4o-mini"
+    assert dummy.calls[0]["messages"][0]["role"] == "system"
+    assert dummy.calls[0]["messages"][0]["content"] == load_mvp_system_prompt_text()
+    assert dummy.calls[0]["messages"][1] == {"role": "user", "content": "Hello"}
 
 
 def test_chat_completions_rejects_streaming():

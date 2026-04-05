@@ -1,6 +1,6 @@
 # RAG API
 
-Handles MVP document ingestion, local embedding, Qdrant-backed retrieval, and stable source/citation assembly.
+Handles MVP document ingestion, deterministic local hash embedding, Qdrant-backed retrieval, and stable source/citation assembly.
 
 ## Canonical package path
 

@@ -110,7 +110,7 @@ def load_embeddings_config() -> EmbeddingsConfig:
         raise ValueError("configs/rag/embeddings.yaml must define a mapping under 'embeddings'")
     return EmbeddingsConfig(
         provider=str(embeddings.get("provider", "local")),
-        model=str(embeddings.get("model", "local-hash")),
+        model=str(embeddings.get("model", "deterministic-local-hash-384")),
         dimensions=int(embeddings.get("dimensions", 384)),
         normalize=bool(embeddings.get("normalize", True)),
     )

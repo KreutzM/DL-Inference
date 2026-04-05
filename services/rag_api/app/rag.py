@@ -16,6 +16,7 @@ from .config import (
     EmbeddingsConfig,
     KnowledgeBaseConfig,
     RetrievalConfig,
+    repo_root,
     VectorStoreConfig,
 )
 
@@ -149,6 +150,14 @@ def _collection_name(kb: KnowledgeBaseConfig, vector_store: VectorStoreConfig) -
     return vector_store.collection_name_template.format(knowledge_base=kb.collection)
 
 
+def _portable_repo_path(path: Path) -> str:
+    root = repo_root()
+    try:
+        return path.resolve().relative_to(root).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
+
+
 def _point_id(kb: KnowledgeBaseConfig, chunk: KnowledgeChunk) -> int:
     digest = blake2b(f"{kb.name}:{chunk.chunk_id}".encode("utf-8"), digest_size=8).digest()
     return int.from_bytes(digest, "big") & ((1 << 63) - 1)
@@ -168,13 +177,13 @@ def _load_source_chunks(kb: KnowledgeBaseConfig, chunking: ChunkingConfig) -> li
             for index, chunk in enumerate(chunked_text):
                 chunks.append(
                     KnowledgeChunk(
-                        source_path=path.as_posix(),
+                        source_path=_portable_repo_path(path),
                         document_id=document_id,
                         chunk_id=f"{document_id}#chunk-{index + 1}",
                         title=path.stem.replace("-", " ").replace("_", " ").title(),
                         text=chunk,
                         metadata={
-                            "source_root": kb.source_root.as_posix(),
+                            "source_root": _portable_repo_path(kb.source_root),
                             "relative_path": document_id,
                             "chunk_index": index,
                         },
@@ -270,7 +279,7 @@ def retrieve_knowledge(
             "document_id": str(payload.get("document_id", "")),
             "chunk_id": str(payload.get("chunk_id", "")),
             "score": score,
-            "source": payload.get("source"),
+            "source": str(payload.get("source", "")),
             "title": payload.get("title"),
             "text": str(payload.get("text", "")),
             "metadata": dict(payload.get("metadata", {})) if isinstance(payload.get("metadata"), dict) else {},

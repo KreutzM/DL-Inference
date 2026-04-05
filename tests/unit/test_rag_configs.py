@@ -13,7 +13,7 @@ def test_mvp_rag_collection_matches_embedding_dimensions() -> None:
     collection = load_collection_config(kb.collection)
 
     assert embeddings.provider == "local"
-    assert embeddings.model == "sentence-transformers/all-MiniLM-L6-v2"
+    assert embeddings.model == "deterministic-local-hash-384"
     assert embeddings.dimensions == 384
     assert collection.vector_size == embeddings.dimensions
     assert collection.distance == "Cosine"

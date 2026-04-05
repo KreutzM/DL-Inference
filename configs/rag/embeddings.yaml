@@ -1,5 +1,5 @@
 embeddings:
   provider: local
-  model: sentence-transformers/all-MiniLM-L6-v2
+  model: deterministic-local-hash-384
   dimensions: 384
   normalize: true

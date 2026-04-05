@@ -19,7 +19,7 @@ def _write_fixture_repo(root: Path) -> None:
             [
                 "embeddings:",
                 "  provider: local",
-                "  model: local-hash",
+                "  model: deterministic-local-hash-384",
                 "  dimensions: 64",
                 "  normalize: true",
             ]
@@ -170,7 +170,8 @@ def test_ingest_and_retrieve_contract(monkeypatch, tmp_path) -> None:
     assert payload["sources"]
     assert payload["citations"]
     assert payload["sources"][0]["source_id"] == payload["citations"][0]["source_id"]
-    assert payload["sources"][0]["source"].endswith("jaws-support-mvp.md")
+    assert payload["sources"][0]["source"] == "knowledge/sources/mvp-one/raw/jaws-support-mvp.md"
+    assert not payload["sources"][0]["source"].startswith("/")
     assert "reset jaws settings" in payload["sources"][0]["text"]
 
 

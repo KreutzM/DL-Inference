@@ -3,7 +3,7 @@
 Suggested first dev stack:
 
 - local vector store
-- local embeddings
+- deterministic local hash embeddings
 - repo-owned gateway and RAG API
 - OpenRouter connectivity for chat completion
 - one assistant and one knowledge base
@@ -19,6 +19,7 @@ python -m repo2ctl.cli smoke
 ## MVP RAG smoke path
 
 The first runnable RAG slice uses the checked-in `mvp-one` knowledge base and the repo-owned `services/rag_api` service.
+Retrieval payloads use repo-relative `source` paths so the smoke path remains portable across machines.
 
 ```bash
 python -m repo2ctl.cli up-dev

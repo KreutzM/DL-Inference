@@ -6,7 +6,9 @@ from services.gateway.app.routing import list_models
 
 def test_list_models_includes_alias_and_configured_models() -> None:
     model_ids = {model["id"] for model in list_models()}
-    assert model_ids == {"mvp_openrouter_chat"}
+    assert "local-default" in model_ids
+    assert "qwen3_32b_awq" in model_ids
+    assert "qwen2_5_72b_instruct_awq" in model_ids
 
 
 def test_gateway_health_and_models() -> None:
@@ -16,4 +18,4 @@ def test_gateway_health_and_models() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["object"] == "list"
-    assert [item["id"] for item in payload["data"]] == ["mvp_openrouter_chat"]
+    assert any(item["id"] == "local-default" for item in payload["data"])

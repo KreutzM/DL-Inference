@@ -90,7 +90,7 @@ def _write_fixture_repo(root: Path) -> None:
                 "model: mvp_openrouter_chat",
                 "system_prompt: services/assistant-config/system-prompts/jaws_support.md",
                 "knowledge_base: mvp-one",
-                "retrieval_policy: deferred",
+                "retrieval_policy: enabled",
             ]
         ),
         encoding="utf-8",

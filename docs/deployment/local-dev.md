@@ -20,6 +20,7 @@ python -m repo2ctl.cli smoke
 
 The first runnable RAG slice uses the checked-in `mvp-one` knowledge base and the repo-owned `services/rag_api` service.
 Retrieval payloads use repo-relative `source` paths so the smoke path remains portable across machines.
+The gateway consumes these retrieval results before calling OpenRouter, so the end-to-end smoke path is gateway -> RAG -> OpenRouter.
 
 ```bash
 python -m repo2ctl.cli up-dev

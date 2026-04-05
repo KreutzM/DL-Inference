@@ -76,6 +76,7 @@ Wait for both, then merge findings into one concise report.
 ## 5. Explicit migration task
 
 Use this only when the task is actually a migration.
+The repo is in a transitional service-path state, so do not treat alternate tree names in older prompts or docs as proof that the migration is already complete.
 
 ```text
 Perform a full migration of <subsystem> from <old path> to <new path>.

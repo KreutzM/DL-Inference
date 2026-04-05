@@ -63,7 +63,7 @@ Scope:
 Constraints:
 - smallest correct patch
 - no unrelated refactors
-- inspect current active service tree before editing
+- inspect the current active service tree before editing
 - keep docs/tests aligned
 
 Validation:
@@ -110,7 +110,8 @@ Use explorer-mini and reviewer in parallel, then combine the findings.
 
 ## Current service-path policy for Codex runs
 
-The repo currently contains multiple service trees for some components.
+The repo is in a transitional service-path state.
+Current checked-in service trees include `services/gateway/` and `services/rag_api/`.
 Before editing:
 - inspect which tree is active for the touched subsystem
 - avoid creating a third competing path

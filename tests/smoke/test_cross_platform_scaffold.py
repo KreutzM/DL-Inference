@@ -18,7 +18,7 @@ REQUIRED_CODEX_FILES = [
     Path(".codex/agents/planner.toml"),
     Path(".codex/agents/reviewer.toml"),
 ]
-REQUIRED_SERVICE_DIRS = [
+REQUIRED_ACTIVE_SERVICE_DIRS = [
     Path("services/gateway"),
     Path("services/rag_api"),
 ]
@@ -36,9 +36,9 @@ def test_codex_repo_controls_exist() -> None:
 
 
 
-def test_canonical_service_dirs_exist() -> None:
-    for rel_path in REQUIRED_SERVICE_DIRS:
-        assert rel_path.exists(), f"Missing canonical service dir: {rel_path}"
+def test_transition_service_dirs_exist() -> None:
+    for rel_path in REQUIRED_ACTIVE_SERVICE_DIRS:
+        assert rel_path.exists(), f"Missing active service dir: {rel_path}"
 
 
 

@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-import compileall
+import os
+import py_compile
 import subprocess
 import sys
-import tomllib
+import tempfile
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib
+
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -59,8 +66,26 @@ def check_toml(errors: list[str]) -> None:
 def check_python_compile(errors: list[str]) -> None:
     for tree in PYTHON_TREES:
         target = REPO_ROOT / tree
-        if target.exists() and not compileall.compile_dir(target, quiet=1):
-            errors.append(f"Python compilation failed under {tree}/")
+        if not target.exists():
+            continue
+
+        for source in target.rglob("*.py"):
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                temp_path = tmp.name
+            try:
+                py_compile.compile(
+                    str(source),
+                    cfile=temp_path,
+                    doraise=True,
+                )
+            except py_compile.PyCompileError as exc:
+                errors.append(f"Python compilation failed under {tree}/: {exc.msg}")
+                break
+            finally:
+                try:
+                    os.remove(temp_path)
+                except FileNotFoundError:
+                    pass
 
 
 def check_docs(errors: list[str]) -> None:
@@ -102,7 +127,7 @@ def main() -> int:
 
     present_paths = report_service_paths()
     if present_paths:
-        print("Service path report:")
+        print("Transition-state service paths present:")
         for path in present_paths:
             print(f"- {path}")
 

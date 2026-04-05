@@ -21,19 +21,18 @@ Improve the repository while preserving these goals:
 
 ## Current service-path policy
 
-The repo currently contains multiple service trees for some components.
+The repo is in a transitional service-path state.
 
-Existing trees visible in the repo today include:
+Current checked-in service trees include:
 - `services/gateway/`
-- `services/gateway_pkg/`
-- `services/rag-api/`
-- `services/rag_api_pkg/`
+- `services/rag_api/`
 
 Rules:
 - **Do not create additional parallel service roots.**
 - If you touch an existing subsystem, first inspect which tree is currently active for that subsystem in code, Dockerfiles, tests, and docs.
-- Stay consistent with the currently active tree **unless the task explicitly performs a full path migration**.
-- If you perform a path migration, migrate **code, imports, tests, docs, Dockerfiles, compose files, and scripts together in the same change**.
+- Do not assume a migration has already completed just because older prompts or docs mention alternate tree names.
+- Stay consistent with the currently active tree unless the task explicitly performs a full path migration.
+- If you perform a path migration, migrate code, imports, tests, docs, Dockerfiles, compose files, and scripts together in the same change.
 - Never leave behind a half-migrated state without documenting it in the final report.
 
 Target architecture still favors repo-owned gateway and repo-owned RAG logic behind a stable OpenAI-compatible edge API.
@@ -72,7 +71,7 @@ Use for:
 For any non-trivial task, follow this order:
 
 1. Inspect the relevant files and nearby docs first.
-2. Summarize the intended change in **2–6 bullets** before editing.
+2. Summarize the intended change in 2-6 bullets before editing.
 3. Edit the minimum necessary set of files.
 4. Update docs when behavior, architecture, paths, or operator workflow change.
 5. Run relevant validation.

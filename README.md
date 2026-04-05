@@ -66,12 +66,10 @@ python -m repo2ctl.cli review-info --base origin/main
 
 ## Current service-path transition state
 
-The repo currently contains multiple service trees for some components, including:
+The repo is currently in a transitional service-path state. Current checked-in service trees include:
 
 - `services/gateway/`
-- `services/gateway_pkg/`
-- `services/rag-api/`
-- `services/rag_api_pkg/`
+- `services/rag_api/`
 
 Current Codex policy:
 - do not create additional parallel roots

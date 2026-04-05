@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from services.rag_api.app.main import app
+from services.rag_api.app import rag
 
 
 def _write_fixture_repo(root: Path) -> None:
@@ -49,9 +50,20 @@ def _write_fixture_repo(root: Path) -> None:
         "\n".join(
             [
                 "vector_store:",
-                "  backend: local-json",
-                "  root: knowledge/processed/vector_store",
-                "  filename_template: \"{knowledge_base}.json\"",
+                "  backend: qdrant",
+                "  collection_name_template: \"{knowledge_base}\"",
+                "  timeout_seconds: 10",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (root / "configs" / "rag" / "collections.yaml").write_text(
+        "\n".join(
+            [
+                "collections:",
+                "  mvp-one:",
+                "    vector_size: 64",
+                "    distance: Cosine",
             ]
         ),
         encoding="utf-8",
@@ -95,9 +107,33 @@ def _write_fixture_repo(root: Path) -> None:
     )
 
 
+class FakeVectorStore:
+    def __init__(self) -> None:
+        self.collections: dict[str, dict[str, object]] = {}
+
+    def ensure_collection(self, collection) -> None:  # type: ignore[no-untyped-def]
+        self.collections.setdefault(collection.name, {"collection": collection, "records": []})
+
+    def upsert(self, collection_name: str, records: list[dict[str, object]]) -> None:
+        self.collections.setdefault(collection_name, {"records": []})
+        self.collections[collection_name]["records"] = list(records)
+
+    def search(self, collection_name: str, vector: list[float], limit: int) -> list[dict[str, object]]:
+        records = list(self.collections.get(collection_name, {}).get("records", []))
+        scored: list[dict[str, object]] = []
+        for record in records:
+            embedding = [float(value) for value in record["embedding"]]
+            score = sum(a * b for a, b in zip(vector, embedding))
+            scored.append({"score": score, "payload": record})
+        scored.sort(key=lambda item: item["score"], reverse=True)
+        return scored[:limit]
+
+
 def test_rag_basic(monkeypatch, tmp_path) -> None:
     _write_fixture_repo(tmp_path)
     monkeypatch.setenv("DL_INFERENCE_REPO_ROOT", str(tmp_path))
+    fake_store = FakeVectorStore()
+    monkeypatch.setattr(rag, "build_vector_store_client", lambda config: fake_store)
 
     client = TestClient(app)
     assert client.get("/health").json()["service"] == "rag_api"
@@ -123,3 +159,4 @@ def test_rag_basic(monkeypatch, tmp_path) -> None:
     payload = retrieve_response.json()
     assert payload["sources"]
     assert payload["citations"]
+    assert payload["sources"][0]["source"].endswith("jaws-support-mvp.md")

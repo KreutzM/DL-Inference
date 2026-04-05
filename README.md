@@ -64,19 +64,22 @@ python -m repo2ctl.cli smoke
 python -m repo2ctl.cli review-info --base origin/main
 ```
 
-## Current service-path transition state
+## Current service-path layout
 
-The repo is currently in a transitional service-path state. Current checked-in service trees include:
+The repo uses canonical service roots under `services/`:
 
+- `services/assistant-config/`
 - `services/gateway/`
+- `services/inference-manager/`
+- `services/ops-api/`
 - `services/rag_api/`
+- `services/ui-lib/`
 
-Current Codex policy:
-- do not create additional parallel roots
-- inspect which tree is active for the touched subsystem before editing
-- keep the touched subsystem internally consistent
-- only perform path migration when it is the explicit task
-- when migrating, migrate code, imports, tests, Dockerfiles, compose files, scripts, and docs together
+Codex guidance:
+- keep changes aligned with the current service-root layout
+- avoid introducing parallel roots
+- only migrate paths when a task explicitly asks for it
+- if a migration is requested, update code, imports, tests, Dockerfiles, compose files, scripts, and docs together
 
 ## Quick start
 

@@ -25,7 +25,9 @@ The platform should remain **OpenAI-compatible at the edge** while staying flexi
 
 The repo-owned service roots are:
 
+- `services/assistant-config`
 - `services/gateway`
+- `services/inference-manager`
+- `services/ops-api`
 - `services/rag_api`
-
-Legacy paths such as `services/gateway_pkg`, `services/rag_api_pkg`, and `services/rag-api` are deprecated and should be removed from active use.
+- `services/ui-lib`

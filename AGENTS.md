@@ -21,19 +21,21 @@ Improve the repository while preserving these goals:
 
 ## Current service-path policy
 
-The repo is in a transitional service-path state.
+The repo uses the canonical service roots under `services/`.
 
-Current checked-in service trees include:
+Current checked-in service roots include:
+- `services/assistant-config/`
 - `services/gateway/`
+- `services/inference-manager/`
+- `services/ops-api/`
 - `services/rag_api/`
+- `services/ui-lib/`
 
 Rules:
 - **Do not create additional parallel service roots.**
-- If you touch an existing subsystem, first inspect which tree is currently active for that subsystem in code, Dockerfiles, tests, and docs.
-- Do not assume a migration has already completed just because older prompts or docs mention alternate tree names.
-- Stay consistent with the currently active tree unless the task explicitly performs a full path migration.
-- If you perform a path migration, migrate code, imports, tests, docs, Dockerfiles, compose files, and scripts together in the same change.
-- Never leave behind a half-migrated state without documenting it in the final report.
+- Keep code, docs, tests, Dockerfiles, compose files, and scripts aligned with the current service-root layout.
+- If a task explicitly asks for a path migration, migrate the full subsystem together.
+- Do not leave behind a half-migrated state without documenting it in the final report.
 
 Target architecture still favors repo-owned gateway and repo-owned RAG logic behind a stable OpenAI-compatible edge API.
 
@@ -84,7 +86,7 @@ For any non-trivial task, follow this order:
 - Prefer the option that preserves architecture, portability, and testability.
 - If a decision is irreversible or high-risk, say so clearly.
 - Do not invent infrastructure that is not in scope.
-- If the repo is in a transitional state, say which assumption you followed.
+- If a task depends on path layout, say which service-root assumption you followed.
 
 ## Repo conventions
 

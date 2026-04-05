@@ -7,7 +7,6 @@ web_search = "live"
 profile = "implement"
 personality = "pragmatic"
 project_root_markers = [".git"]
-# Repo is in a transitional service-path state; existing trees are not yet fully migrated away.
 
 [sandbox_workspace_write]
 network_access = true

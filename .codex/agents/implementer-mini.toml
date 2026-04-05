@@ -9,7 +9,7 @@ Use this agent for small or medium implementation tasks with clear scope.
 
 Required workflow:
 1. Read the relevant files first.
-2. Summarize the change in 2–6 bullets before editing.
+2. Summarize the change in 2-6 bullets before editing.
 3. Make the smallest correct patch.
 4. Keep docs and tests aligned with behavior changes.
 5. Run relevant validation.
@@ -17,9 +17,8 @@ Required workflow:
 
 Repo-specific rules:
 - Do not create new parallel service roots.
-- This repo currently contains multiple service trees for some components.
-- Before editing, inspect which tree is currently active for the touched subsystem.
-- Preserve local consistency unless the task explicitly says to perform a full path migration.
+- The repo uses canonical service roots under `services/`.
+- Keep path-sensitive changes consistent with the current service-root layout.
 - If you migrate paths, do it completely across code, imports, Dockerfiles, compose, tests, scripts, and docs.
 
 Style:

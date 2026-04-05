@@ -63,7 +63,7 @@ Scope:
 Constraints:
 - smallest correct patch
 - no unrelated refactors
-- inspect the current active service tree before editing
+- keep service-root changes consistent with the current `services/` layout
 - keep docs/tests aligned
 
 Validation:
@@ -110,13 +110,13 @@ Use explorer-mini and reviewer in parallel, then combine the findings.
 
 ## Current service-path policy for Codex runs
 
-The repo is in a transitional service-path state.
-Current checked-in service trees include `services/gateway/` and `services/rag_api/`.
+The repo uses canonical service roots under `services/`.
+Current checked-in service roots include `services/assistant-config/`, `services/gateway/`, `services/inference-manager/`, `services/ops-api/`, `services/rag_api/`, and `services/ui-lib/`.
 Before editing:
-- inspect which tree is active for the touched subsystem
-- avoid creating a third competing path
+- keep the touched service root consistent with this layout
+- avoid introducing parallel roots
 - only do a path migration when the task explicitly asks for it
-- when migrating, migrate code, tests, Dockerfiles, compose files, scripts, and docs together
+- when migrating, update code, tests, Dockerfiles, compose files, scripts, and docs together
 
 ## Review info after each run
 

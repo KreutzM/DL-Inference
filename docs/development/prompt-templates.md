@@ -12,7 +12,7 @@ Scope:
 - touch only <files / subsystem>
 
 Constraints:
-- inspect the current active service tree before editing
+- keep service-root changes consistent with the current `services/` layout
 - do not create parallel service roots
 - no unrelated refactors
 - update docs/tests if behavior or workflow changes
@@ -76,7 +76,7 @@ Wait for both, then merge findings into one concise report.
 ## 5. Explicit migration task
 
 Use this only when the task is actually a migration.
-The repo is in a transitional service-path state, so do not treat alternate tree names in older prompts or docs as proof that the migration is already complete.
+The repo uses canonical service roots under `services/`, so do not treat older path names in prompts or docs as active guidance.
 
 ```text
 Perform a full migration of <subsystem> from <old path> to <new path>.

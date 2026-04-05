@@ -118,6 +118,9 @@ Portable Python entrypoint (recommended)
 python -m repo2ctl.cli up-dev
 ```
 
+The MVP stack includes only the repo-owned gateway, the repo-owned RAG API, and Qdrant.
+It does not require a UI service or local LLM serving on the dev machine.
+
 PowerShell wrapper
 
 ```powershell

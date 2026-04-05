@@ -9,6 +9,14 @@ Suggested first dev stack for the MVP:
 - OpenRouter connectivity for chat completion
 - one assistant and one knowledge base
 
+`python -m repo2ctl.cli up-dev` starts the MVP stack only:
+
+- gateway
+- RAG API
+- Qdrant
+
+It does not require a UI service or a local LLM runtime.
+
 ## Typical flow
 
 ```bash

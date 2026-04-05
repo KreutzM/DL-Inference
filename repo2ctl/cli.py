@@ -10,11 +10,10 @@ from urllib.request import urlopen
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 BASE_COMPOSE = ["deploy/compose/docker-compose.base.yml"]
-DEV_COMPOSE = BASE_COMPOSE + [
+MVP_COMPOSE = [
+    "deploy/compose/docker-compose.mvp.yml",
     "deploy/compose/docker-compose.dev.yml",
     "deploy/compose/docker-compose.rag.yml",
-    "deploy/compose/docker-compose.vllm.yml",
-    "deploy/compose/docker-compose.librechat.yml",
 ]
 PROD_COMPOSE = BASE_COMPOSE + [
     "deploy/compose/docker-compose.prod.yml",
@@ -94,7 +93,7 @@ def cmd_smoke(_: argparse.Namespace) -> int:
 
 
 def cmd_up_dev(_: argparse.Namespace) -> int:
-    return run(compose_cmd(DEV_COMPOSE) + ["up", "-d"])
+    return run(compose_cmd(MVP_COMPOSE) + ["up", "-d"])
 
 
 def cmd_up_prod(_: argparse.Namespace) -> int:
@@ -102,11 +101,11 @@ def cmd_up_prod(_: argparse.Namespace) -> int:
 
 
 def cmd_down(_: argparse.Namespace) -> int:
-    return run(compose_cmd(BASE_COMPOSE) + ["down"])
+    return run(compose_cmd(MVP_COMPOSE) + ["down"])
 
 
 def cmd_logs(args: argparse.Namespace) -> int:
-    cmd = compose_cmd(BASE_COMPOSE) + ["logs", "-f"]
+    cmd = compose_cmd(MVP_COMPOSE) + ["logs", "-f"]
     if args.service:
         cmd.append(args.service)
     return run(cmd)

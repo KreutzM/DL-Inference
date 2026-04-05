@@ -49,8 +49,8 @@ pip install -e .
 
 ## Best use under Windows
 
-The strongest Windows-friendly path for this repo is:
+The strongest Windows-friendly path for this repo's MVP is:
 
-- run the UI, gateway, RAG, and Qdrant-related services locally
-- use OpenRouter as the backend model provider
-- keep the local Linux GPU path as a later deployment target
+- run the repo-owned gateway, RAG API, and Qdrant locally
+- use OpenRouter as the only chat-completion backend
+- keep the local Linux GPU path and UI services for later phases

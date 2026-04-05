@@ -18,9 +18,13 @@ REQUIRED_CODEX_FILES = [
     Path(".codex/agents/planner.toml"),
     Path(".codex/agents/reviewer.toml"),
 ]
-REQUIRED_ACTIVE_SERVICE_DIRS = [
+REQUIRED_SERVICE_DIRS = [
+    Path("services/assistant-config"),
     Path("services/gateway"),
+    Path("services/inference-manager"),
+    Path("services/ops-api"),
     Path("services/rag_api"),
+    Path("services/ui-lib"),
 ]
 
 
@@ -36,9 +40,9 @@ def test_codex_repo_controls_exist() -> None:
 
 
 
-def test_transition_service_dirs_exist() -> None:
-    for rel_path in REQUIRED_ACTIVE_SERVICE_DIRS:
-        assert rel_path.exists(), f"Missing active service dir: {rel_path}"
+def test_service_dirs_exist() -> None:
+    for rel_path in REQUIRED_SERVICE_DIRS:
+        assert rel_path.exists(), f"Missing service dir: {rel_path}"
 
 
 

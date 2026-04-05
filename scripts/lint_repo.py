@@ -38,13 +38,6 @@ TOML_FILES = [
 
 PYTHON_TREES = ["repo2ctl", "services", "tests", "scripts"]
 
-SERVICE_PATHS_TO_REPORT = [
-    Path("services/gateway"),
-    Path("services/gateway_pkg"),
-    Path("services/rag-api"),
-    Path("services/rag_api_pkg"),
-]
-
 
 def check_required_files(errors: list[str]) -> None:
     for rel_path in REQUIRED_FILES:
@@ -105,10 +98,14 @@ def check_docs(errors: list[str]) -> None:
 
 
 def report_service_paths() -> list[str]:
+    services_dir = REPO_ROOT / "services"
+    if not services_dir.exists():
+        return []
+
     return [
-        path.as_posix()
-        for path in SERVICE_PATHS_TO_REPORT
-        if (REPO_ROOT / path).exists()
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in sorted(services_dir.iterdir())
+        if path.is_dir() and not path.name.startswith("__")
     ]
 
 
@@ -127,7 +124,7 @@ def main() -> int:
 
     present_paths = report_service_paths()
     if present_paths:
-        print("Transition-state service paths present:")
+        print("Service roots present:")
         for path in present_paths:
             print(f"- {path}")
 
